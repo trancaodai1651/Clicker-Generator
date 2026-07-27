@@ -2044,109 +2044,170 @@ button.fil-chip:active {
 }
 .history-btn:disabled { opacity: 0.35; cursor: default; }
 
-
 /* --- Logic Ẩn/Hiện Màn Hình --- */
 .screen-hidden { display: none !important; }
-.screen-active { display: flex; /* hoặc block tuỳ layout của bạn */ }
+.screen-active { 
+  display: flex; 
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+}
 
-/* --- Giao diện Dashboard --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- Giao diện Dashboard Hiện đại --- */
 #dashboard-screen {
   width: 100vw;
   height: 100vh;
-  background-color: var(--bg, #f3f4f6);
+  /* Thêm hiệu ứng nền gradient tinh tế tỏa ra từ giữa */
+  background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.12), var(--bg, #111827) 70%);
   display: flex;
   justify-content: center;
   align-items: center;
-  color: var(--fg, #111827);
+  color: var(--fg, #f3f4f6);
   font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
 }
 
 .dashboard-container {
   max-width: 900px;
   width: 100%;
   padding: 2rem;
+  /* Hiệu ứng trượt lên khi load trang */
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 4rem;
 }
 
 .dashboard-logo {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 1rem;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 1.5rem;
+  /* Hiệu ứng logo lơ lửng (Floating) */
+  animation: float 6s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+  100% { transform: translateY(0px); }
 }
 
 .dashboard-header h1 {
-  font-size: 2.5rem;
-  margin: 0 0 0.5rem 0;
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem 0;
+  /* Chữ đổ màu Gradient hiện đại */
+  background: linear-gradient(135deg, var(--fg, #fff) 30%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
 }
 
 .dashboard-header p {
-  font-size: 1.1rem;
-  color: var(--muted, #6b7280);
+  font-size: 1.15rem;
+  color: var(--fg, #f3f4f6);
+  opacity: 0.7;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
+/* --- Lưới Công cụ (Grid) --- */
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
 }
 
+/* --- Thẻ Card Công cụ (Glassmorphism) --- */
 .tool-card {
-  background: var(--panel-bg, #ffffff);
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 12px;
-  padding: 2rem;
+  /* Nền trong suốt mờ ảo, tự thích ứng màu */
+  background: var(--panel-bg, rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  /* Chuyển động mượt mà cho mọi thao tác */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.2);
+  color: var(--fg, #fff); /* Sửa lỗi chữ tàng hình */
+  display: flex;
+  flex-direction: column;
 }
 
+/* Hiệu ứng Hover ấn tượng */
 .tool-card:hover:not(.disabled) {
-  transform: translateY(-4px);
+  transform: translateY(-8px) scale(1.02);
   border-color: #3b82f6;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: var(--panel-bg, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 20px 40px -8px rgba(59, 130, 246, 0.25);
 }
 
 .tool-card.disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   filter: grayscale(100%);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .tool-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.tool-card:hover:not(.disabled) .tool-icon {
+  transform: scale(1.1) rotate(-5deg);
 }
 
 .tool-card h3 {
-  font-size: 1.25rem;
-  margin: 0 0 0.5rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  color: var(--fg, #fff);
 }
 
 .tool-card p {
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--muted, #6b7280);
-  line-height: 1.5;
+  font-size: 1rem;
+  color: var(--fg, #f3f4f6);
+  opacity: 0.65;
+  line-height: 1.6;
 }
 
 /* Nút Trở về Home trong Tool */
 .btn-back-home {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: transparent;
   border: 1px solid var(--border);
   color: var(--fg);
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 12px;
-  margin-bottom: 16px;
-  transition: background 0.2s;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
 }
-.btn-back-home:hover { background: var(--border); }
+
+.btn-back-home:hover { 
+  background: rgba(59, 130, 246, 0.1); 
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
