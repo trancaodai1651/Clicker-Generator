@@ -90,7 +90,7 @@ export async function loadProject(file: File, reprocessFn: () => void, rebuildFn
 
     if (Array.isArray(proj.palette)) {
       // Sửa thành:
-const pal = store.get().palette.map((p: any, i: number) => ({ ...p, filamentRgb: proj.palette[i]?.filamentRgb ?? p.filamentRgb }));
+    const pal = store.get().palette.map((p: any, i: number) => ({ ...p, filamentRgb: proj.palette[i]?.filamentRgb ?? p.filamentRgb }));
       store.set({ palette: pal, baseColorOverride: set.baseColorOverride ?? null });
       rebuildFn();
     }

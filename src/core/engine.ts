@@ -3,8 +3,8 @@ import { processImage } from '../image/pipeline';
 import { parseSvg } from '../image/logo';
 import { parseLetter } from '../image/letter';
 import { buildSvg, LUCIDE_ICONS } from '../image/lucideIcons';
-import { resetHistory, setPendingHistoryReset } from '../store/historyManager';
-import { hexToRgb, rgbToHex, firstLine, debounce } from '../utils/helpers';
+import { setPendingHistoryReset } from '../store/historyManager';
+import { rgbToHex, firstLine, debounce } from '../utils/helpers';
 import type { BuildParams, BuildRegion, GeometryResponse, PaletteEntry, RGB, ColorTarget } from '../types';
 
 export const worker = new Worker(new URL('../workers/geometry.worker.ts', import.meta.url), { type: 'module' });
