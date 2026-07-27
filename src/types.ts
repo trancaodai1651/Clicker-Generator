@@ -197,3 +197,4 @@ export type GeometryResponse =
   // for the keychain hole) for the status line.
   | { type: 'parts'; parts: ClickerPart[]; switchPlacements: SwitchPlacement[]; warnings: string[] }
   | { type: 'error'; message: string };
+export type ColorTarget = { kind: 'region'; index: number; compIndex: number } | { kind: 'body' } | { kind: 'base' };

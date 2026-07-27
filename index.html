@@ -74,14 +74,31 @@
         </div>
       </section>
 
+      <!-- 🟢 MÀN HÌNH CÔNG CỤ 1: CLICKER GENERATOR -->
+      <section id="tool-screen" style="display: none; opacity: 0;">
+        <div id="layout">
+          <aside id="sidebar-left" class="sidebar left"></aside>
+          
+          <div id="viewport">
+            <div id="app"></div>
+            <div id="status">Booting…</div>
+          </div>
+          
+          <aside id="sidebar-right" class="sidebar right"></aside>
+        </div>
+      </section>
+
       <!-- 🟢 MÀN HÌNH CÔNG CỤ 2: SHADOW BOX -->
       <section id="shadowbox-screen" style="display: none; opacity: 0;">
         <div id="layout-sb" style="width: 100%; height: 100%; display: flex;">
           <aside id="sb-sidebar-left" class="sidebar left"></aside>
-          <div id="viewport" style="flex: 1; position: relative; background: var(--bg);">
+          
+          <!-- Đã sửa ID từ viewport thành sb-viewport để tránh trùng lặp -->
+          <div id="sb-viewport" style="flex: 1; position: relative; background: var(--bg);">
             <div id="sb-app" style="width: 100%; height: 100%;"></div>
             <div id="sb-status" style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--panel-bg); padding: 8px 16px; border-radius: 20px; font-size: 13px; border: 1px solid var(--border); z-index: 10;">Khởi tạo Shadow Box…</div>
           </div>
+          
           <aside id="sb-sidebar-right" class="sidebar right"></aside>
         </div>
       </section>
