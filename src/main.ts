@@ -182,6 +182,102 @@ btnOpenShadowBox?.addEventListener('click', () => {
   });
 });
 
+// 🟢 BƠM GIAO DIỆN CHO SHADOW BOX (MOCKUP UI)
+const sbSidebarLeft = document.getElementById('sb-sidebar-left');
+const sbSidebarRight = document.getElementById('sb-sidebar-right');
+
+if (sbSidebarLeft && sbSidebarRight) {
+  // CỘT TRÁI: Cài đặt Khung (Frame)
+  sbSidebarLeft.innerHTML = `
+    <div class="app-header">
+      <button id="sb-btn-back" class="btn-back-home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
+        Dashboard
+      </button>
+      <h1>Shadow Box</h1>
+      <p class="app-subtitle">Cấu hình khung và chân đế</p>
+    </div>
+    
+    <div class="section">
+      <span class="label">Tỉ lệ khung (Aspect Ratio)</span>
+      <select id="sb-ratio" style="width: 100%; margin-bottom: 12px; padding: 8px; border-radius: 6px;">
+        <option value="free">Tự do (Bám theo ảnh gốc)</option>
+        <option value="1:1">Vuông (1:1)</option>
+        <option value="3:4">Chân dung (3:4)</option>
+        <option value="16:9">Phong cảnh (16:9)</option>
+      </select>
+      
+      <div class="prow-stacked">
+        <div class="prow-header">
+          <label>Kích thước (Cạnh dài nhất)</label>
+          <span class="val">150 mm</span>
+        </div>
+        <input type="range" min="50" max="250" value="150" />
+      </div>
+    </div>
+
+    <div class="section">
+      <span class="label">Kiểu trưng bày</span>
+      <div class="tabs" style="margin-bottom: 12px;">
+        <button class="tab active" type="button">Để bàn</button>
+        <button class="tab" type="button">Treo tường</button>
+      </div>
+      <div class="switch-row">
+        <span class="switch-label">Tự tạo ngàm khóa nắp</span>
+        <label class="toggle"><input type="checkbox" checked /><span class="slider"></span></label>
+      </div>
+    </div>
+  `;
+
+  // CỘT PHẢI: Upload và Layer Manager
+  sbSidebarRight.innerHTML = `
+    <div class="section">
+      <span class="label">Hình ảnh đầu vào</span>
+      <div class="drop" id="sb-drop">
+        <div class="drop-title">Upload Image</div>
+        <div class="drop-text">Kéo thả ảnh vào đây</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <span class="label">Quản lý Lớp (Kéo thả để sắp xếp)</span>
+      <div class="layer-manager">
+        <!-- Mockup 3 Lớp -->
+        <div class="layer-item" draggable="true">
+          <div class="layer-color-chip" style="background: #ef4444;"></div>
+          <div class="layer-info">
+            <span class="layer-title">Lớp 1 (Mặt trước)</span>
+            <span class="layer-desc">Màu Đỏ</span>
+          </div>
+          <div class="drag-handle">☰</div>
+        </div>
+        
+        <div class="layer-item" draggable="true">
+          <div class="layer-color-chip" style="background: #eab308;"></div>
+          <div class="layer-info">
+            <span class="layer-title">Lớp 2 (Giữa)</span>
+            <span class="layer-desc">Màu Vàng</span>
+          </div>
+          <div class="drag-handle">☰</div>
+        </div>
+
+        <div class="layer-item" draggable="true">
+          <div class="layer-color-chip" style="background: #3b82f6;"></div>
+          <div class="layer-info">
+            <span class="layer-title">Lớp 3 (Nền sau)</span>
+            <span class="layer-desc">Màu Xanh dương</span>
+          </div>
+          <div class="drag-handle">☰</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-sticky-footer" style="margin-top: auto;">
+      <button class="primary" style="width: 100%; padding: 12px;">Export Frame & Layers (3MF)</button>
+    </div>
+  `;
+}
+
 // ---- Apply initial theme (system pref or saved preference) ----
 (function applyInitialTheme() {
   const saved = localStorage.getItem('clicker-theme');
