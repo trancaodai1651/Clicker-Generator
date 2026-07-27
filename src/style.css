@@ -2109,7 +2109,6 @@ button.fil-chip:active {
   margin: 0 0 0.75rem 0;
   /* Chữ đổ màu Gradient hiện đại */
   background: linear-gradient(135deg, var(--fg, #fff) 30%, #3b82f6 100%);
-  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.02em;
 }
