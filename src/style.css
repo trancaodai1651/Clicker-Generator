@@ -2044,6 +2044,7 @@ button.fil-chip:active {
 }
 .history-btn:disabled { opacity: 0.35; cursor: default; }
 
+
 /* --- Logic Ẩn/Hiện Màn Hình --- */
 .screen-hidden { display: none !important; }
 .screen-active { 
@@ -2109,6 +2110,7 @@ button.fil-chip:active {
   margin: 0 0 0.75rem 0;
   /* Chữ đổ màu Gradient hiện đại */
   background: linear-gradient(135deg, var(--fg, #fff) 30%, #3b82f6 100%);
+  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.02em;
 }
@@ -2209,4 +2211,24 @@ button.fil-chip:active {
   background: rgba(59, 130, 246, 0.1); 
   border-color: #3b82f6;
   color: #3b82f6;
+}
+
+/* --- Sửa lỗi Layout Tool bị hụt chân --- */
+#tool-screen {
+  width: 100%;
+  /* Trừ đi chiều cao của Topbar (khoảng 40px - 48px tùy code của bạn) */
+  height: calc(100vh - 42px); 
+  overflow: hidden;
+}
+
+#tool-screen.screen-active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Đảm bảo layout cũ tự động giãn hết cỡ */
+#tool-screen > #layout {
+  width: 100%;
+  height: 100%;
+  flex: 1;
 }

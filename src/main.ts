@@ -135,6 +135,10 @@ btnOpenClicker?.addEventListener('click', () => {
   
   toolScreen?.classList.remove('screen-hidden');
   toolScreen?.classList.add('screen-active');
+  // 🟢 THÊM ĐOẠN NÀY: Ép trình duyệt báo hiệu "resize" để Canvas 3D render lại đúng kích thước
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, 50);
 });
 
 // ---- Apply initial theme (system pref or saved preference) ----
