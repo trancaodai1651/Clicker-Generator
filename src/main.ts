@@ -123,6 +123,20 @@ const sidebarRight = document.getElementById('sidebar-right')!;
 const statusEl = document.getElementById('status')!;
 const viewer = createViewer(document.getElementById('app')!);
 
+// 🟢 THÊM DOM CHO DASHBOARD VÀ LOGIC CHUYỂN MÀN HÌNH
+const dashboardScreen = document.getElementById('dashboard-screen');
+const toolScreen = document.getElementById('tool-screen');
+const btnOpenClicker = document.getElementById('btn-open-clicker');
+
+// Xử lý khi user bấm "Clicker Generator" ở Dashboard
+btnOpenClicker?.addEventListener('click', () => {
+  dashboardScreen?.classList.remove('screen-active');
+  dashboardScreen?.classList.add('screen-hidden');
+  
+  toolScreen?.classList.remove('screen-hidden');
+  toolScreen?.classList.add('screen-active');
+});
+
 // ---- Apply initial theme (system pref or saved preference) ----
 (function applyInitialTheme() {
   const saved = localStorage.getItem('clicker-theme');
@@ -133,6 +147,15 @@ const viewer = createViewer(document.getElementById('app')!);
 })();
 
 const ui = createUi(sidebarLeft, sidebarRight, statusEl, {
+  // 🟢 THÊM XỬ LÝ QUAY LẠI DASHBOARD TỪ TOOL
+  onBackToHome() {
+    toolScreen?.classList.remove('screen-active');
+    toolScreen?.classList.add('screen-hidden');
+    
+    dashboardScreen?.classList.remove('screen-hidden');
+    dashboardScreen?.classList.add('screen-active');
+  },
+  
   onIsFlatKeychain(isFlat) {
       store.set({ isFlatKeychain: isFlat });
       rebuild(); // 🟢 Phát lệnh đúc lại mô hình ngay khi gạt công tắc

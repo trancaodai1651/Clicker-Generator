@@ -2043,3 +2043,110 @@ button.fil-chip:active {
   color: var(--text);
 }
 .history-btn:disabled { opacity: 0.35; cursor: default; }
+
+
+/* --- Logic Ẩn/Hiện Màn Hình --- */
+.screen-hidden { display: none !important; }
+.screen-active { display: flex; /* hoặc block tuỳ layout của bạn */ }
+
+/* --- Giao diện Dashboard --- */
+#dashboard-screen {
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg, #f3f4f6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--fg, #111827);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.dashboard-container {
+  max-width: 900px;
+  width: 100%;
+  padding: 2rem;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.dashboard-logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.dashboard-header p {
+  font-size: 1.1rem;
+  color: var(--muted, #6b7280);
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.tool-card {
+  background: var(--panel-bg, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.tool-card:hover:not(.disabled) {
+  transform: translateY(-4px);
+  border-color: #3b82f6;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.tool-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(100%);
+}
+
+.tool-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.tool-card h3 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.tool-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted, #6b7280);
+  line-height: 1.5;
+}
+
+/* Nút Trở về Home trong Tool */
+.btn-back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+.btn-back-home:hover { background: var(--border); }
