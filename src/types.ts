@@ -145,6 +145,7 @@ export interface BuildParams {
   extrudeChamfer: boolean;
   mergeTopFrame: boolean;
   keepMeshesSeparate: boolean;
+  isFlatKeychain?: boolean;
 }
 
 /** Mesh payload (transferable). First 3 of each `numProp` stride are x,y,z. */
