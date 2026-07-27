@@ -128,6 +128,8 @@ const viewer = createViewer(document.getElementById('app')!);
 const dashboardScreen = document.getElementById('dashboard-screen');
 const toolScreen = document.getElementById('tool-screen');
 const btnOpenClicker = document.getElementById('btn-open-clicker');
+const shadowBoxScreen = document.getElementById('shadowbox-screen'); // 👈 Thêm
+const btnOpenShadowBox = document.getElementById('btn-open-shadowbox'); // 👈 Thêm
 
 // Animation vào Dashboard khi mới load trang
 if (dashboardScreen) {
@@ -162,6 +164,21 @@ btnOpenClicker?.addEventListener('click', () => {
       // 🟢 TRIGGER ENGINE 3D RENDER LẠI KÍCH THƯỚC CHUẨN
       window.dispatchEvent(new Event('resize'));
     }
+  });
+});
+// 2. Mở Shadow Box Tool
+btnOpenShadowBox?.addEventListener('click', () => {
+  if (!dashboardScreen || !shadowBoxScreen) return;
+  const tl = gsap.timeline();
+  tl.to(dashboardScreen, {
+    opacity: 0, y: -20, duration: 0.35, ease: 'power2.in',
+    onComplete: () => {
+      dashboardScreen.style.display = 'none';
+      shadowBoxScreen.style.display = 'block';
+    }
+  }).to(shadowBoxScreen, {
+    opacity: 1, y: 0, duration: 0.45, ease: 'power2.out',
+    onComplete: () => window.dispatchEvent(new Event('resize'))
   });
 });
 
