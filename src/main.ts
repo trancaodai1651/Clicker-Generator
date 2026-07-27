@@ -1,3 +1,4 @@
+import { gsap } from 'gsap';
 import './style.css';
 import { createStore } from './store/store';
 import { createViewer } from './viewer/viewer';
@@ -123,22 +124,45 @@ const sidebarRight = document.getElementById('sidebar-right')!;
 const statusEl = document.getElementById('status')!;
 const viewer = createViewer(document.getElementById('app')!);
 
-// 🟢 THÊM DOM CHO DASHBOARD VÀ LOGIC CHUYỂN MÀN HÌNH
+// ---- GSAP ANIMATION SWITCHER ----
 const dashboardScreen = document.getElementById('dashboard-screen');
 const toolScreen = document.getElementById('tool-screen');
 const btnOpenClicker = document.getElementById('btn-open-clicker');
 
-// Xử lý khi user bấm "Clicker Generator" ở Dashboard
+// Animation vào Dashboard khi mới load trang
+if (dashboardScreen) {
+  gsap.from('.dashboard-header', { y: -20, opacity: 0, duration: 0.6, ease: 'power2.out' });
+  gsap.from('.tool-card', { y: 30, opacity: 0, duration: 0.6, stagger: 0.15, ease: 'power2.out', delay: 0.2 });
+}
+
+// Chuyển từ Dashboard -> Tool (Clicker Generator)
 btnOpenClicker?.addEventListener('click', () => {
-  dashboardScreen?.classList.remove('screen-active');
-  dashboardScreen?.classList.add('screen-hidden');
-  
-  toolScreen?.classList.remove('screen-hidden');
-  toolScreen?.classList.add('screen-active');
-  // 🟢 THÊM ĐOẠN NÀY: Ép trình duyệt báo hiệu "resize" để Canvas 3D render lại đúng kích thước
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'));
-  }, 50);
+  if (!dashboardScreen || !toolScreen) return;
+
+  const tl = gsap.timeline();
+
+  // 1. Mờ dần Dashboard
+  tl.to(dashboardScreen, {
+    opacity: 0,
+    y: -20,
+    duration: 0.35,
+    ease: 'power2.in',
+    onComplete: () => {
+      dashboardScreen.style.display = 'none';
+      toolScreen.style.display = 'block';
+    }
+  })
+  // 2. Hiện mượt mà Tool Screen
+  .to(toolScreen, {
+    opacity: 1,
+    y: 0,
+    duration: 0.45,
+    ease: 'power2.out',
+    onComplete: () => {
+      // 🟢 TRIGGER ENGINE 3D RENDER LẠI KÍCH THƯỚC CHUẨN
+      window.dispatchEvent(new Event('resize'));
+    }
+  });
 });
 
 // ---- Apply initial theme (system pref or saved preference) ----
@@ -153,11 +177,25 @@ btnOpenClicker?.addEventListener('click', () => {
 const ui = createUi(sidebarLeft, sidebarRight, statusEl, {
   // 🟢 THÊM XỬ LÝ QUAY LẠI DASHBOARD TỪ TOOL
   onBackToHome() {
-    toolScreen?.classList.remove('screen-active');
-    toolScreen?.classList.add('screen-hidden');
-    
-    dashboardScreen?.classList.remove('screen-hidden');
-    dashboardScreen?.classList.add('screen-active');
+    if (!dashboardScreen || !toolScreen) return;
+
+    const tl = gsap.timeline();
+
+    tl.to(toolScreen, {
+      opacity: 0,
+      duration: 0.3,
+      ease: 'power2.in',
+      onComplete: () => {
+        toolScreen.style.display = 'none';
+        dashboardScreen.style.display = 'flex';
+      }
+    })
+    .to(dashboardScreen, {
+      opacity: 1,
+      y: 0,
+      duration: 0.4,
+      ease: 'power2.out'
+    });
   },
   
   onIsFlatKeychain(isFlat) {

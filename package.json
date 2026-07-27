@@ -13,6 +13,7 @@
   "dependencies": {
     "d3-contour": "^4.0.2",
     "fflate": "^0.8.3",
+    "gsap": "^3.15.0",
     "lucide": "^1.21.0",
     "manifold-3d": "^3.0.1",
     "pica": "^10.0.2",

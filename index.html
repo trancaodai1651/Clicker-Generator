@@ -3,14 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Clicker Generator</title>
+    <title>Clicker Generator Workspace</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
-    <!-- Favicon: black logo (dark ink) reads on light backgrounds; white logo on dark. -->
     <link rel="icon" type="image/png" href="./assets/favicon/Vostokfaviconblack.png" />
     <link rel="icon" type="image/png" href="./assets/favicon/vostokfaviconwhite.png" media="(prefers-color-scheme: dark)" />
-    <link rel="apple-touch-icon" href="./assets/favicon/Vostokfaviconblack.png" />
     <script>
       (function() {
         const saved = localStorage.getItem('clicker_theme');
@@ -21,10 +19,10 @@
     </script>
   </head>
   <body>
-    <!-- Thanh Topbar dùng chung -->
+    <!-- Topbar giữ cố định -->
     <header id="topbar">
       <div class="topbar-group topbar-left">
-        <a class="topbar-btn" href="https://github.com/trancaodai1651/Clicker-Generator" target="_blank" rel="noopener noreferrer">
+        <a class="topbar-btn" href="https://github.com/vostoklabs/Clicker-Generator" target="_blank" rel="noopener noreferrer">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 2.9-.39c.98 0 1.97.13 2.9.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.26 5.69.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>
           View on GitHub
         </a>
@@ -46,47 +44,47 @@
       </div>
     </header>
 
-    <!-- 🟢 MÀN HÌNH 1: DASHBOARD NGOÀI CÙNG -->
-    <div id="dashboard-screen" class="screen-active">
-      <div class="dashboard-container">
-        <header class="dashboard-header">
-          <!-- Hiển thị logo tương thích với dark/light mode -->
-          <img src="./assets/favicon/Vostokfaviconblack.png" alt="Logo" class="dashboard-logo only-light" />
-          <img src="./assets/favicon/vostokfaviconwhite.png" alt="Logo" class="dashboard-logo only-dark" style="display: none;" />
+    <main id="app-wrapper">
+      <!-- 🟢 MÀN HÌNH DASHBOARD -->
+      <section id="dashboard-screen">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <h1 class="dash-title">Vostok Labs Workspace</h1>
+            <p class="dash-subtitle">Chọn một công cụ để bắt đầu làm việc</p>
+          </div>
           
-          <h1>Cloud09 Workspace</h1>
-          <p>Chọn một công cụ để bắt đầu làm việc</p>
-        </header>
-        
-        <div class="tool-grid">
-          <!-- Card 1: Clicker Generator -->
-          <button id="btn-open-clicker" class="tool-card">
-            <div class="tool-icon">🖱️</div>
-            <h3>Clicker Generator</h3>
-            <p>Chuyển đổi hình ảnh, SVG, văn bản thành nút bấm cơ học hoặc móc khóa 3D.</p>
-          </button>
+          <div class="tool-grid">
+            <button id="btn-open-clicker" class="tool-card">
+              <div class="tool-icon">🖱️</div>
+              <div class="tool-content">
+                <h3>Clicker Generator</h3>
+                <p>Chuyển đổi hình ảnh, SVG, văn bản thành nút bấm cơ học hoặc móc khóa 3D.</p>
+              </div>
+            </button>
 
-          <!-- Card 2: Công cụ tương lai -->
-          <button class="tool-card disabled" disabled>
-            <div class="tool-icon">🚀</div>
-            <h3>Sắp ra mắt...</h3>
-            <p>Tính năng mới đang được phát triển. Vui lòng quay lại sau!</p>
-          </button>
+            <button class="tool-card disabled" disabled>
+              <div class="tool-icon">🚀</div>
+              <div class="tool-content">
+                <h3>Sắp ra mắt...</h3>
+                <p>Tính năng mới đang được phát triển. Vui lòng quay lại sau!</p>
+              </div>
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- 🟢 MÀN HÌNH 2: CÔNG CỤ CLICKER (Bọc lại layout cũ của bạn) -->
-    <div id="tool-screen" class="screen-hidden">
-      <div id="layout">
-        <aside id="sidebar-left" class="sidebar left"></aside>
-        <div id="viewport">
-          <div id="app"></div>
-          <div id="status">Booting…</div>
+      <!-- 🟢 MÀN HÌNH CÔNG CỤ (Khôi phục nguyên vẹn ID layout cũ) -->
+      <section id="tool-screen" style="display: none; opacity: 0;">
+        <div id="layout">
+          <aside id="sidebar-left" class="sidebar left"></aside>
+          <div id="viewport">
+            <div id="app"></div>
+            <div id="status">Booting…</div>
+          </div>
+          <aside id="sidebar-right" class="sidebar right"></aside>
         </div>
-        <aside id="sidebar-right" class="sidebar right"></aside>
-      </div>
-    </div>
+      </section>
+    </main>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
