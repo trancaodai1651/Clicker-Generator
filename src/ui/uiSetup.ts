@@ -1,6 +1,6 @@
 import { store, appData } from '../store/appState';
-import { rebuild, reprocess, debouncedRebuild, debouncedQuietRebuild, debouncedReprocess, applyModelRecolor } from '../core/engine';
-import { createUi } from './ui';
+import { rebuild, reprocess, debouncedRebuild, debouncedQuietRebuild, debouncedReprocess, applyModelRecolor, processBottomImage } from '../core/engine';
+import { createUi } from './index';
 import { runWizard } from './wizard';
 import { loadFileToImage } from '../image/decode';
 import { importFontFile } from '../image/letter';
@@ -8,6 +8,7 @@ import { downloadThreeMF, downloadSTL } from '../export';
 import { hexToRgb, downloadBlob } from '../utils/helpers';
 import { handleExportLicense } from './licenseManager';
 import { saveProject, loadProject } from '../project/saveLoad';
+import type { ClickerPart } from '../types';
 
 function defaultSwitchLayout(n: number, capWidthMm: number) {
   if (n <= 1) return [{ x: 0, y: 0, rotation: 0 }];
@@ -39,6 +40,24 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
 
   // 🟢 2. Cấu hình UI cho Tool Clicker Generator
   const ui = createUi(sidebarLeft, sidebarRight, statusEl, {
+    onBottomModeChange: (mode) => {
+      store.set({ bottomBaseMode: mode });
+      if (mode === 'match') {
+        appData.bottomRegionSet = null;
+        debouncedRebuild();
+      } else if (mode === 'custom' && appData.bottomImage) {
+        processBottomImage();
+      }
+    },
+    
+    onBottomUpload: (file) => {
+      store.set({ building: true, status: 'Reading bottom image…' });
+      loadFileToImage(file).then(img => {
+        appData.bottomImage = img;
+        store.set({ bottomBaseMode: 'custom' });
+        processBottomImage();
+      }).catch(err => store.set({ building: false, status: 'Could not read image: ' + err }));
+    },
     onBackToHome() { if (screens.toolScreen) screens.backToDashboard(screens.toolScreen); },
     onIsFlatKeychain(isFlat) { store.set({ isFlatKeychain: isFlat }); rebuild(); },
     
@@ -74,15 +93,15 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
     
     onSwitchNudge: (dx, dy) => {
       const s = store.get(); const i = Math.min(s.activeSwitchIndex, s.switches.length - 1);
-      store.set({ switches: s.switches.map((sw, idx) => idx === i ? { ...sw, x: Math.max(-15, Math.min(15, sw.x + dx)), y: Math.max(-15, Math.min(15, sw.y + dy)) } : sw) });
+      store.set({ switches: s.switches.map((sw: any, idx: number) => idx === i ? { ...sw, x: Math.max(-15, Math.min(15, sw.x + dx)), y: Math.max(-15, Math.min(15, sw.y + dy)) } : sw) });
       debouncedRebuild();
     },
     onSwitchRotate: (deltaDeg) => {
       const s = store.get(); const i = Math.min(s.activeSwitchIndex, s.switches.length - 1);
-      store.set({ switches: s.switches.map((sw, idx) => idx === i ? { ...sw, rotation: Math.round(Math.max(-30, Math.min(30, sw.rotation + deltaDeg))) } : sw) });
+      store.set({ switches: s.switches.map((sw: any, idx: number) => idx === i ? { ...sw, rotation: Math.round(Math.max(-30, Math.min(30, sw.rotation + deltaDeg))) } : sw) });
       debouncedRebuild();
     },
-    onSwitchReset: () => { const s = store.get(); store.set({ switches: s.switches.map((sw, idx) => (idx === Math.min(s.activeSwitchIndex, s.switches.length - 1) ? defaultSwitchLayout(s.switches.length, s.capWidthMm)[idx] : sw)) }); debouncedRebuild(); },
+    onSwitchReset: () => { const s = store.get(); store.set({ switches: s.switches.map((sw: any, idx: number) => (idx === Math.min(s.activeSwitchIndex, s.switches.length - 1) ? defaultSwitchLayout(s.switches.length, s.capWidthMm)[idx] : sw)) }); debouncedRebuild(); },
     onSwitchCount: (n) => { const s = store.get(); if (n !== s.switches.length) { store.set({ switches: defaultSwitchLayout(n, s.capWidthMm), activeSwitchIndex: 0 }); debouncedRebuild(); } },
     onActiveSwitch: (i) => store.set({ activeSwitchIndex: i }),
     onSwitchResetAll: () => { const s = store.get(); store.set({ switches: defaultSwitchLayout(s.switches.length, s.capWidthMm), activeSwitchIndex: 0 }); debouncedRebuild(); },
@@ -134,7 +153,7 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
   // Sự kiện nhận yêu cầu hiện bảng chọn màu từ Engine
   document.addEventListener('show-color-popover', ((e: CustomEvent) => {
     ui.showColorPopoverAt(e.detail.clientX, e.detail.clientY, e.detail.hex, e.detail.options, {
-      onSelect: (hex) => applyModelRecolor(e.detail.target, hexToRgb(hex), e.detail.index, viewer),
+      onSelect: (hex: string) => applyModelRecolor(e.detail.target, hexToRgb(hex), e.detail.index, viewer),
       onClose: () => store.set({ selectedParts: [] }),
     });
   }) as EventListener);
@@ -142,7 +161,7 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
   store.subscribe((s) => {
     ui.update(s);
     const indices: number[] = [];
-    s.selectedParts.forEach((name) => { const idx = appData.latestParts.findIndex((p) => p.name === name); if (idx >= 0) indices.push(idx); });
+    s.selectedParts.forEach((name: string) => { const idx = appData.latestParts.findIndex((p: ClickerPart) => p.name === name); if (idx >= 0) indices.push(idx); });
     viewer.highlightParts(indices);
     
     import('../store/historyManager').then(m => {

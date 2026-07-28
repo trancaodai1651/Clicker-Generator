@@ -4,7 +4,7 @@ import Module from 'manifold-3d';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
 import { parse3MF } from '../geometry/threemfImport';
 import { buildClicker } from '../geometry/buildClicker';
-import type { GeometryRequest, GeometryResponse } from '../types';
+import type { GeometryRequest, GeometryResponse, ClickerPart } from '../types';
 
 type Wasm = Awaited<ReturnType<typeof Module>>;
 
@@ -55,43 +55,30 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
       stem?.delete?.();
       const a = assetToSolid(wasm, msg.socket);
       const b = assetToSolid(wasm, msg.stem);
-      // The socket and stem are authored in independent local frames (separate
-      // exports), so normalize each into the shared assembly frame — Z = 0 is the
-      // switch-plate top (where the switch latches), switch axis at the XY origin:
-      //  • Socket: center on its own bbox (the ~14 mm cutout is symmetric about the
-      //    axis) and drop its TOP face to Z = 0 — ianku's updated socket has its flat
-      //    top at the plate/latch plane; it cuts downward (−Z) into the body.
-      //  • Stem: center on its own bbox (symmetric keycap mount). Keep its authored
-      //    Z — the stem top is the cap-underside rest height above the plate, which
-      //    is what makes the cap float proud of the body border.
+      
       const sbb = a.solid.boundingBox();
       const scx = (sbb.min[0] + sbb.max[0]) / 2;
       const scy = (sbb.min[1] + sbb.max[1]) / 2;
       socket = a.solid.translate([-scx, -scy, -sbb.max[2]]);
+
       const tbb = b.solid.boundingBox();
       const tcx = (tbb.min[0] + tbb.max[0]) / 2;
       const tcy = (tbb.min[1] + tbb.max[1]) / 2;
       stem = b.solid.translate([-tcx, -tcy, 0]);
+
       a.solid.delete();
       b.solid.delete();
 
-      // The switch is DISPLAY-ONLY (a preview toggle) — no CSG. Parse it raw and place
-      // it in the assembly frame:
-      //  • XY: shift by the SAME amount as the stem so it stays coaxial with cap/socket.
-      //  • Z: AUTO-SEAT — drop the bottom of its widest section (the top-housing
-      //    shoulder that rests on the plate) to Z = 0 (the socket top / plate plane).
-      //    This is robust to the asset's authored Z, and lands the plunger at the cap
-      //    underside (the stem top), so the switch seats in the socket and meets the cap.
       const sw = parse3MF(msg.switch);
       const v = sw.vertProperties;
       let maxExtent = 0;
       for (let i = 0; i < v.length; i += 3) {
         v[i] -= tcx;
         v[i + 1] -= tcy;
-        const e = Math.max(Math.abs(v[i]), Math.abs(v[i + 1]));
-        if (e > maxExtent) maxExtent = e;
+        const ext = Math.max(Math.abs(v[i]), Math.abs(v[i + 1]));
+        if (ext > maxExtent) maxExtent = ext;
       }
-      const wide = maxExtent * 0.96; // the top housing is the single widest feature
+      const wide = maxExtent * 0.96;
       let seatZ = Infinity;
       for (let i = 0; i < v.length; i += 3) {
         if (Math.max(Math.abs(v[i]), Math.abs(v[i + 1])) >= wide && v[i + 2] < seatZ) {
@@ -101,7 +88,7 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
       let zmin = Infinity;
       let zmax = -Infinity;
       for (let i = 0; i < v.length; i += 3) {
-        v[i + 2] -= seatZ; // raise so the seating shoulder sits at Z = 0
+        v[i + 2] -= seatZ;
         if (v[i + 2] < zmin) zmin = v[i + 2];
         if (v[i + 2] > zmax) zmax = v[i + 2];
       }
@@ -109,6 +96,7 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
       const switchInfo = `${(sw.triVerts.length / 3) | 0} tris, seated +${(-seatZ).toFixed(
         2,
       )}mm, Z[${zmin.toFixed(2)},${zmax.toFixed(2)}]`;
+      
       post({ type: 'initDone', socketInfo: a.info, stemInfo: b.info, switchInfo, switchMesh }, [
         switchMesh.vertProperties.buffer,
         switchMesh.triVerts.buffer,
@@ -118,16 +106,25 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
 
     if (msg.type === 'buildClicker') {
       if (!socket || !stem) throw new Error('Assets not initialized');
+      
+      const { regions, outline, params } = msg;
+      const bottomOutline = (msg as any).bottomOutline;
+
       const { parts, switchPlacements, warnings } = buildClicker(
         wasm,
         socket,
         stem,
-        msg.regions,
-        msg.outline,
-        msg.params,
+        regions,
+        outline,
+        params,
+        bottomOutline,
       );
+
       const transfer: Transferable[] = [];
-      for (const p of parts) transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
+      for (const p of parts as ClickerPart[]) {
+        transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
+      }
+
       post({ type: 'parts', parts, switchPlacements, warnings }, transfer);
       return;
     }

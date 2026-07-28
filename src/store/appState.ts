@@ -54,6 +54,8 @@ export const store = createStore<UiState>({
 // Các biến dữ liệu nặng (Data states)
 export const appData = {
   originalImage: null as RgbaImage | null,
+  bottomImage: null as RgbaImage | null, // 👈 Thêm biến lưu ảnh đế
+  bottomRegionSet: null as RegionSet | null, // 👈 Thêm biến lưu viền của ảnh đế
   regionSet: null as RegionSet | null,
   latestParts: [] as ClickerPart[],
   assetsReady: false,

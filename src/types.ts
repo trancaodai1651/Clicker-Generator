@@ -115,37 +115,35 @@ export const DEFAULT_PREPROCESS: PreprocessParams = {
  *  into the top; the cap nests INSIDE that well (button-in-bezel). */
 export interface BuildParams {
   baseShape: BaseShapeKind;
-  capWidthMm: number; // the cap (top) footprint; body = cap + tolerance + border
-  topThickness: number; // solid base-color backing behind the image (min 1–2 mm)
-  imageDepth: number; // how deep the colored image cuts in from the top
-  imageMargin: number; // flat base-color frame between the image and the cap edge
-  borderWidth: number; // raised body border around the cap (the bezel wall)
-  capProud: number; // how far the cap top sticks up above the body border at rest (≈ travel → flush when pressed)
-  tolerance: number; // slip-fit gap between cap outer wall and body well wall ("switch socket" fit)
-  /** XY scale offset (mm) applied to the cap's keycap-mount stem so it fits the MX
-   *  switch: +looser (opens the cross socket, easier to press on), −tighter. 0 = as
-   *  authored. Only the XY footprint scales — Z is kept so the cap rest height is fixed. */
+  capWidthMm: number;
+  topThickness: number;
+  imageDepth: number;
+  imageMargin: number;
+  borderWidth: number;
+  capProud: number;
+  tolerance: number;
   stemTolerance: number;
-  colorBleed: number; // tiny outward grow on each color so neighbors never leave a gap
-  stepHeight: number; // mm per height level for raised color relief
-  travel: number; // switch press travel the well must clear (~3.5–4 mm)
+  colorBleed: number;
+  stepHeight: number;
+  travel: number;
   floorThickness: number;
-  /** MX switch placements (1..3). Each is nudged off the design centre and rotated so
-   *  the switch sits under solid material; the worker clamps each to the cap footprint
-   *  and enforces a minimum centre-to-centre pitch, reporting the applied array back. */
   switches: SwitchPlacement[];
-  keychain: KeychainParams; // keyring attachment (loop tab or inside hole) on the body
-  baseFilamentRgb: RGB; // cap backing + stem color
+  keychain: KeychainParams;
+  baseFilamentRgb: RGB;
   bodyColorRgb: RGB;
-  /** Component-specific height levels (partName -> level integer) */
   componentHeights: Record<string, number>;
-  /** Edge modifications (fillet / chamfer) for body and cap edges. */
   edgeSettings: EdgeSetting[];
-  /** Global toggle: chamfer the top edge of every raised (extruded) color part. */
   extrudeChamfer: boolean;
   mergeTopFrame: boolean;
   keepMeshesSeparate: boolean;
   isFlatKeychain?: boolean;
+
+  // 🟢 THÊM 4 THUỘC TÍNH NÀY:
+  bottomOffsetX?: number;
+  bottomOffsetY?: number;
+  bottomRotation?: number;
+  bottomRegions?: BuildRegion[];
+  bottomExpandPercent?: number;
 }
 
 /** Mesh payload (transferable). First 3 of each `numProp` stride are x,y,z. */
@@ -183,6 +181,7 @@ export type GeometryRequest =
       type: 'buildClicker';
       regions: BuildRegion[];
       outline: Ring[];
+      bottomOutline?: Ring[]; // 👈 THÊM DÒNG NÀY (Viền của tấm ảnh thứ 2)
       params: BuildParams;
     };
 
