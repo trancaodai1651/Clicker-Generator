@@ -47,21 +47,14 @@ export const renderRightImport = () => `
             <div class="drop-text" style="font-size: 11px;">Drop a silhouette image here</div>
           </div>
           <input type="file" id="file-bottom" accept="image/*" hidden />
-          <!-- 🟢 Thêm Toggle bật/tắt khối trơn không màu -->
+
+          <!-- Toggle Bật/Tắt khối trơn không màu -->
           <div class="switch-row" style="margin-top: 10px;">
             <span class="switch-label" style="font-size: 12px;">Solid Base (Khối trơn không màu) ${tip('Chỉ giữ lại hình dáng viền đế, bỏ toàn bộ mảng màu họa tiết trên mặt đế.')}</span>
             <label class="toggle"><input id="bottomSolidOnly" type="checkbox" /><span class="slider"></span></label>
           </div>
 
-          <!-- Slider Mở rộng khuôn đế -->
-          <div class="prow-stacked" style="margin-top:12px;">
-            <div class="prow-header">
-              <label for="baseExpand">Mở rộng khuôn đế ${tip('Thêm tỷ lệ lề xung quanh để khuôn đế to hơn và bao bọc vừa vặn với logo nắp trên.')}</label>
-              <input type="text" class="val" id="baseExpandVal" value="22%" />
-            </div>
-            <input type="range" id="baseExpand" min="0" max="100" step="1" value="22" />
-          </div>
-          <!-- Slider Mở rộng khuôn đế (mặc định 22%) -->
+          <!-- Slider Mở rộng khuôn đế (MẶC ĐỊNH DUY NHẤT 1 THANH TRƯỢT TẠI ĐÂY) -->
           <div class="prow-stacked" style="margin-top:12px;">
             <div class="prow-header">
               <label for="baseExpand">Mở rộng khuôn đế ${tip('Thêm tỷ lệ lề xung quanh để khuôn đế to hơn và bao bọc vừa vặn với logo nắp trên.')}</label>
