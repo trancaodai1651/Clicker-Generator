@@ -1,6 +1,6 @@
 import { createStore } from './store';
 import type { ClickerPart, RegionSet, RGB } from '../types';
-import type { UiState } from '../ui/ui';
+import type { UiState } from '../ui/types';
 import type { RgbaImage } from '../image/decode';
 
 // Khởi tạo trạng thái giao diện UI
