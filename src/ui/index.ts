@@ -195,6 +195,7 @@ export function createUi(
     $('tab-base-match')?.classList.toggle('active', !isCustom);
     $('tab-base-custom')?.classList.toggle('active', isCustom);
     if ($('bottom-upload-zone')) $('bottom-upload-zone').style.display = isCustom ? 'block' : 'none';
+    if ($('bottomSolidOnly')) $<HTMLInputElement>('bottomSolidOnly').checked = !!(state as any).bottomSolidOnly;
 
     // Cập nhật Trạng thái Nút
     if ($('export')) $<HTMLButtonElement>('export').disabled = !state.hasParts || state.building;

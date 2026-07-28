@@ -100,6 +100,10 @@ export function bindGlobalEvents(cb: UiCallbacks) {
     store.set({ bottomOffsetX: 0, bottomOffsetY: 0, bottomRotation: 0 } as any);
     debouncedRebuild();
   });
+  $<HTMLInputElement>('bottomSolidOnly')?.addEventListener('change', (e: Event) => {
+    store.set({ bottomSolidOnly: (e.target as HTMLInputElement).checked } as any);
+    debouncedRebuild();
+  });
 
   // --- Tolerance Steppers ---
   $('socketTolMinus')?.addEventListener('click', () => cb.onSocketTolStep(-0.05));

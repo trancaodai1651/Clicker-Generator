@@ -165,7 +165,7 @@ export function rebuild(quiet = false) {
 
   // 🟢 1. BÓC TÁCH CÁC VÙNG MÀU CHO CẢ PHẦN ĐẾ
   const bottomRegions: BuildRegion[] = [];
-  if (s.bottomBaseMode === 'custom' && appData.bottomRegionSet) {
+  if (s.bottomBaseMode === 'custom' && appData.bottomRegionSet && !(s as any).bottomSolidOnly) {
     appData.bottomRegionSet.regions.forEach((r, i) => {
       r.components.forEach((comp, j) => {
         const partName = `bottom-color-${i}-${j}`;
