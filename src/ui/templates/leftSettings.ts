@@ -105,7 +105,7 @@ export const renderLeftSettings = () => `
             <input type="text" class="val" id="topthickVal" />
           </div>
           <!-- 🟢 Tăng max từ 4 lên 10 (hoặc bất kỳ độ dày nào bạn muốn) -->
-          <input type="range" id="topthick" min="1" max="10" step="0.1" />
+          <input type="range" id="topthick" min="1" max="100" step="0.1" />
         </div>
         <div class="prow-stacked">
           <div class="prow-header"><label for="imgdepth">Image depth</label><input type="text" class="val" id="imgdepthVal" /></div>
