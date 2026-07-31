@@ -50,7 +50,7 @@ export function createUi(
     $('separateLetters')?.addEventListener('change', (e: Event) => cb.onSeparateLetters((e.target as HTMLInputElement).checked));
     $('extrudeMinus')?.addEventListener('click', () => cb.onExtrudeStep(-1));
     $('extrudePlus')?.addEventListener('click', () => cb.onExtrudeStep(1));
-    $('extrudeChamfer')?.addEventListener('change', (e: Event) => cb.onExtrudeChamfer((e.target as HTMLInputElement).checked));
+    $('extrudeChamfer')?.addEventListener('change', (e: Event) => { const v = (e.target as HTMLInputElement).checked; console.log('UI: extrudeChamfer ->', v); cb.onExtrudeChamfer(v); });
 
     $('edgesPanel')?.addEventListener('click', (e: MouseEvent) => {
       const targetEl = e.target as HTMLElement;
@@ -89,6 +89,7 @@ export function createUi(
     // Cập nhật giá trị Input & Range
     if ($('smooth')) $<HTMLInputElement>('smooth').value = String(state.smoothing); setVal('smoothVal', Math.round(state.smoothing * 100) + '%');
     if ($('width')) $<HTMLInputElement>('width').value = String(state.capWidthMm); setVal('widthVal', state.capWidthMm + ' mm');
+    if ($('baseHeight')) $<HTMLInputElement>('baseHeight').value = String((state as any).baseHeight ?? 12); setVal('baseHeightVal', ((state as any).baseHeight ?? 12).toFixed(1) + ' mm');
     if ($('topthick')) $<HTMLInputElement>('topthick').value = String(state.topThickness); setVal('topthickVal', state.topThickness.toFixed(1) + ' mm');
     if ($('imgdepth')) $<HTMLInputElement>('imgdepth').value = String(state.imageDepth); setVal('imgdepthVal', state.imageDepth.toFixed(1) + ' mm');
     if ($('margin')) $<HTMLInputElement>('margin').value = String(state.imageMargin); setVal('marginVal', state.imageMargin.toFixed(1) + ' mm');
@@ -154,6 +155,7 @@ export function createUi(
 
     if ($('removebg')) $<HTMLInputElement>('removebg').checked = state.removeBg;
     if ($('removebgSvg')) $<HTMLInputElement>('removebgSvg').checked = state.removeBg;
+    if ($('photoFlatten')) $<HTMLInputElement>('photoFlatten').checked = state.photoFlatten;
     if ($('showswitch')) $<HTMLInputElement>('showswitch').checked = state.showSwitch;
     if ($('mergeTopFrame')) $<HTMLInputElement>('mergeTopFrame').checked = state.mergeTopFrame;
     if ($('keepMeshesSeparate')) $<HTMLInputElement>('keepMeshesSeparate').checked = state.keepMeshesSeparate;
@@ -195,7 +197,23 @@ export function createUi(
     $('tab-base-match')?.classList.toggle('active', !isCustom);
     $('tab-base-custom')?.classList.toggle('active', isCustom);
     if ($('bottom-upload-zone')) $('bottom-upload-zone').style.display = isCustom ? 'block' : 'none';
+
+    // 🟢 Đồng bộ Solid Base (Nằm ĐÚNG BÊN TRONG hàm update)
     if ($('bottomSolidOnly')) $<HTMLInputElement>('bottomSolidOnly').checked = !!(state as any).bottomSolidOnly;
+
+    // 🟢 Đồng bộ UI Khối 3D Bề mặt (Nằm ĐÚNG BÊN TRONG hàm update)
+    const topProfile = (state as any).topProfile || 'flat';
+    if ($('topProfileTabs')) {
+      $('topProfileTabs').querySelectorAll('button').forEach(b => 
+        b.classList.toggle('active', (b as HTMLElement).dataset.profile === topProfile)
+      );
+    }
+    if ($('profileHeightRow')) {
+      $('profileHeightRow').style.display = topProfile === 'flat' ? 'none' : 'block';
+    }
+    const pHeight = (state as any).topProfileHeight || 5.0;
+    if ($('profileHeight')) $<HTMLInputElement>('profileHeight').value = String(pHeight);
+    if ($('profileHeightVal')) $('profileHeightVal').textContent = `${pHeight.toFixed(1)} mm`;
 
     // Cập nhật Trạng thái Nút
     if ($('export')) $<HTMLButtonElement>('export').disabled = !state.hasParts || state.building;
@@ -276,6 +294,7 @@ export function createUi(
     }
   }
 
+  // --- TRẢ VỀ CÁC HÀM XỬ LÝ (NẰM NGOÀI HÀM UPDATE) ---
   return {
     update,
     hexRgb,

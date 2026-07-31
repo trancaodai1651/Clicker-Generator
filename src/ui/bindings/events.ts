@@ -29,6 +29,7 @@ export function bindGlobalEvents(cb: UiCallbacks) {
 
   // --- Sliders & Input Range ---
   const width = $<HTMLInputElement>('width'); width?.addEventListener('input', () => cb.onWidth(+width.value));
+  const baseHeight = $<HTMLInputElement>('baseHeight'); baseHeight?.addEventListener('input', () => cb.onBaseHeight(+baseHeight.value));
   const topthick = $<HTMLInputElement>('topthick'); topthick?.addEventListener('input', () => cb.onTopThickness(+topthick.value));
   const imgdepth = $<HTMLInputElement>('imgdepth'); imgdepth?.addEventListener('input', () => cb.onImageDepth(+imgdepth.value));
   const margin = $<HTMLInputElement>('margin'); margin?.addEventListener('input', () => cb.onImageMargin(+margin.value));
@@ -36,6 +37,7 @@ export function bindGlobalEvents(cb: UiCallbacks) {
 
   bindValInput('smoothVal', 'smooth', cb.onSmoothing, (v: number) => v / 100);
   bindValInput('widthVal', 'width', cb.onWidth);
+  bindValInput('baseHeightVal', 'baseHeight', cb.onBaseHeight);
   bindValInput('topthickVal', 'topthick', cb.onTopThickness);
   bindValInput('imgdepthVal', 'imgdepth', cb.onImageDepth);
   bindValInput('marginVal', 'margin', cb.onImageMargin);
@@ -44,6 +46,7 @@ export function bindGlobalEvents(cb: UiCallbacks) {
   // --- Checkboxes ---
   $<HTMLInputElement>('removebg')?.addEventListener('change', (e: Event) => cb.onRemoveBg((e.target as HTMLInputElement).checked));
   $<HTMLInputElement>('removebgSvg')?.addEventListener('change', (e: Event) => cb.onRemoveBg((e.target as HTMLInputElement).checked));
+  $<HTMLInputElement>('photoFlatten')?.addEventListener('change', (e: Event) => cb.onPhotoFlatten((e.target as HTMLInputElement).checked));
   $<HTMLInputElement>('mergeTopFrame')?.addEventListener('change', (e: Event) => cb.onMergeTopFrame((e.target as HTMLInputElement).checked));
   $<HTMLInputElement>('keepMeshesSeparate')?.addEventListener('change', (e: Event) => cb.onKeepMeshesSeparate((e.target as HTMLInputElement).checked));
   $<HTMLInputElement>('keychain')?.addEventListener('change', (e: Event) => cb.onKeychainToggle((e.target as HTMLInputElement).checked));
@@ -174,4 +177,21 @@ export function bindGlobalEvents(cb: UiCallbacks) {
   const projFile = $<HTMLInputElement>('projFile');
   $('loadProj')?.addEventListener('click', () => projFile.click());
   projFile?.addEventListener('change', () => { if (projFile.files?.[0]) cb.onLoadProject(projFile.files[0]); projFile.value = ''; });
+
+  // --- 3D Surface Profile Events ---
+  $('topProfileTabs')?.addEventListener('click', (e: MouseEvent) => {
+    const t = (e.target as HTMLElement).closest('[data-profile]') as HTMLElement | null;
+    if (t) {
+      store.set({ topProfile: t.dataset.profile } as any);
+      debouncedRebuild();
+    }
+  });
+
+  const profileHeight = $<HTMLInputElement>('profileHeight');
+  profileHeight?.addEventListener('input', () => {
+    const val = +profileHeight.value;
+    if ($('profileHeightVal')) $('profileHeightVal').textContent = `${val.toFixed(1)} mm`;
+    store.set({ topProfileHeight: val } as any);
+    debouncedRebuild();
+  });
 }

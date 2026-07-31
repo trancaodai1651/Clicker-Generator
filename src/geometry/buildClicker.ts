@@ -9,6 +9,7 @@ export function buildClicker(
   wasm: any, socket: any, stem: any, regions: BuildRegion[], outline: Ring[], params: BuildParams, bottomOutline?: Ring[]
 ): { parts: ClickerPart[]; switchPlacements: SwitchPlacement[]; warnings: string[] } {
   const ctx = new BuildContext(wasm);
+  const warnings: string[] = [];
   const isFlatKeychain = (params as any).isFlatKeychain ?? false;
 
   const socketBB = socket.boundingBox(); const stemBB = stem.boundingBox();
@@ -29,12 +30,14 @@ export function buildClicker(
   }
   const scaleRings = (rings: Ring[]) => rings.map(r => r.map(([x, y]) => [x * imageScale, y * imageScale] as [number, number]));
 
+  const MIN_AREA = 0.05;
+
   const filledOutline = (rings: Ring[]): any => {
-    const validRings = scaleRings(rings).filter(r => r.length >= 3 && getRingArea(r) > 0.001);
+    const validRings = scaleRings(rings).filter(r => r.length >= 3 && Math.abs(getRingArea(r)) > MIN_AREA);
     return validRings.length === 0 ? ctx.track(ctx.wasm.CrossSection.square([imageScale, imageScale], true)) : ctx.simp(ctx.track(new ctx.wasm.CrossSection(validRings, 'NonZero')));
   };
 
-  // --- 1. Tạo Nắp Phím Trên (Cap) ---
+  // --- 1. Tạo hình dáng cắt 2D của Nắp (Cap Plate) ---
   let plate: any;
   if (params.baseShape === 'outline') {
     const solidPlate = removeHoles(ctx, ctx.track(filledOutline(outline).offset(border, 'Round', 2.0, 32)));
@@ -60,6 +63,8 @@ export function buildClicker(
   }
 
   const imageArea = ctx.shrink(plate, border, plate, sectionIsEmpty);
+  const fatImageArea = params.colorBleed > 0.001 ? ctx.grow(imageArea, params.colorBleed) : imageArea;
+
   const { applied, pinched } = resolveSwitches((params.switches?.length ? params.switches : [{ x: 0, y: 0, rotation: 0 }]).slice(0, 3), plate.bounds(), switchClear, socketDim);
 
   let stemSized = stem;
@@ -75,7 +80,7 @@ export function buildClicker(
   
   const wellFootprint = ctx.simp(wellFp);
 
-  // --- 3. Khuôn Đế Hạt Cà Phê + Tự Động Tạo Lề Rộng Rãi ---
+  // --- 3. Khuôn Đế Hạt Cà Phê ---
   let customBasePlate: any = null;
   let bottomScaleFactor = 1.0;
 
@@ -98,22 +103,26 @@ export function buildClicker(
       scaledBase = ctx.track(unitBase.scale([bottomScaleFactor, bottomScaleFactor]));
     }
 
-    // 🟢 Sử dụng hệ số tùy chỉnh từ UI (Mặc định 22%)
-    const expandPercent = params.bottomExpandPercent ?? 22;
+    const expandPercent = (params as any).bottomExpandPercent ?? 22;
     bottomScaleFactor *= (1.0 + expandPercent / 100);
     scaledBase = ctx.track(unitBase.scale([bottomScaleFactor, bottomScaleFactor]));
 
     customBasePlate = scaledBase;
   }
 
-  const bodyFootprint = customBasePlate 
-    ? ctx.simp(customBasePlate) 
-    : ctx.simp(ctx.grow(wellFootprint, Math.max(0.4, params.borderWidth)));
+  const bodyFootprint = customBasePlate ? ctx.simp(customBasePlate) : ctx.simp(ctx.grow(wellFootprint, Math.max(0.4, params.borderWidth)));
 
-  const cavityFloorZ = socketBB.max[2], slabBottomZ = stemBB.max[2], backing = Math.max(0.8, params.topThickness), imageDepth = Math.max(0.2, params.imageDepth);
-  const slabTopZ = slabBottomZ + backing + imageDepth, imageBottomZ = slabBottomZ + backing;
+  // Tính toán Z Bound
+  const cavityFloorZ = socketBB.max[2], slabBottomZ = stemBB.max[2], backing = Math.max(0, params.topThickness), imageDepth = Math.max(0.2, params.imageDepth);
+  
+  const profile = (params as any).topProfile || 'flat';
+  const pHeight = Math.max(0, (params as any).topProfileHeight ?? 5.0);
+  const baseHeight = Math.max(0, (params as any).baseHeight ?? 12);
+  
+  const slabTopZ = slabBottomZ + backing + imageDepth;
+  const imageBottomZ = slabBottomZ + backing;
   const bodyBottomZ = socketBB.min[2] - params.floorThickness;
-  const bodyTopZ = slabTopZ - Math.max(0.4, Math.min(params.capProud, Math.max(0.4, slabTopZ - cavityFloorZ - 1.0)));
+  const bodyTopZ = bodyBottomZ + baseHeight;
   const wellFloorZ = Math.min(cavityFloorZ, slabBottomZ - Math.max(0, params.travel));
 
   const parts: ClickerPart[] = [];
@@ -122,39 +131,168 @@ export function buildClicker(
     return { kind, group, colorRgb, name, numProp: mesh.numProp, vertProperties: new Float32Array(mesh.vertProperties), triVerts: new Uint32Array(mesh.triVerts) };
   };
 
-  // --- 4. Tạo Nắp ĐẮK LẮK ---
-  const cap = ctx.extrudeAt(plate, backing + imageDepth, slabBottomZ, sectionIsEmpty);
-  let placed2D: any = null; const holesByLevel = new Map<number, any>();
+  const buildProfileVolume = (cs: any, flatHeight: number, profileHeight: number, z: number, profileType: string): any => {
+    const makeEmpty = () => {
+      const dummy = ctx.track(ctx.wasm.Manifold.extrude(ctx.track(ctx.wasm.CrossSection.circle(0.1, 3)), 0.1));
+      return ctx.track(dummy.subtract(dummy));
+    };
 
+    try {
+      const bounds = cs.bounds();
+      const cx = (bounds.min[0] + bounds.max[0]) / 2;
+      const cy = (bounds.min[1] + bounds.max[1]) / 2;
+      const polygons = typeof cs.toPolygons === 'function' ? cs.toPolygons() : [];
+      const hasArea = polygons.some((ring: [number, number][]) => ring.length >= 3);
+      let maxRadius = 0;
+      for (const ring of polygons) {
+        for (const [x, y] of ring) {
+          maxRadius = Math.max(maxRadius, Math.hypot(x - cx, y - cy));
+        }
+      }
+      if (!hasArea || maxRadius <= 0 || flatHeight < 0 || profileHeight <= 0) return makeEmpty();
+      const centered = ctx.track(cs.translate([-cx, -cy]));
+      const totalHeight = flatHeight + profileHeight;
+      const coneTipScale = 0.01;
+      const domeTipScale = 0.01;
+      const place = (solid: any, zOffset: number) => ctx.track(solid.translate([cx, cy, z + zOffset]));
+
+      const sliceCount = Math.max(14, Math.min(36, Math.ceil(totalHeight * 4)));
+      let volume: any = null;
+      const radialScaleAtHeight = (height: number): number => {
+        if (profileType === 'cone') {
+        if (profileType === 'cone') {
+          const coneT = Math.max(0, Math.min(1, height / Math.max(1e-6, totalHeight)));
+          const sharpened = Math.pow(coneT, 1.18);
+          const baseOverlapScale = 1.01;
+          const sharpConeTipScale = 0.02;
+          return Math.max(sharpConeTipScale, baseOverlapScale - (baseOverlapScale - sharpConeTipScale) * sharpened);
+        }
+        }
+        const t = Math.max(0, Math.min(1, height / Math.max(1e-6, totalHeight)));
+        return Math.max(domeTipScale, Math.sqrt(Math.max(0, 1 - t * t)));
+      };
+
+      for (let sliceIndex = 0; sliceIndex < sliceCount; sliceIndex++) {
+        const t0 = sliceIndex / sliceCount;
+        const t1 = (sliceIndex + 1) / sliceCount;
+        const z0 = totalHeight * t0;
+        const z1 = totalHeight * t1;
+        const scale0 = radialScaleAtHeight(z0);
+        const scale1 = radialScaleAtHeight(z1);
+        const layerHeight = Math.max(0.001, z1 - z0);
+        const minScale = profileType === 'cone' ? coneTipScale : domeTipScale;
+        const baseSection = Math.abs(scale0 - 1) < 1e-6 ? centered : ctx.track(centered.scale([scale0, scale0]));
+        const ratio = Math.max(minScale, scale1 / Math.max(minScale, scale0));
+        const layer = place(ctx.track(baseSection.extrude(layerHeight, 0, 0, [ratio, ratio])), z0);
+        volume = volume ? ctx.track(volume.add(layer)) : layer;
+      }
+
+      return volume ?? makeEmpty();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('buildClicker: profile generation failed', err);
+      warnings.push(`profile-generation-failed err=${String(err)}`);
+      return makeEmpty();
+    }
+  };
+
+  // --- 4. Tạo Khối Gốc (capVolume) với profile mịn ---
+  let capVolume: any;
+  if (profile === 'flat') {
+    capVolume = ctx.extrudeAt(plate, backing + imageDepth, slabBottomZ, sectionIsEmpty);
+  } else {
+    try {
+      capVolume = buildProfileVolume(plate, backing + imageDepth, pHeight, slabBottomZ, profile);
+    } catch (err) {
+      // If any unexpected WASM/runtime error occurs while generating the profile,
+      // fall back to a flat extrusion so the UI doesn't crash. Post a warning.
+      // eslint-disable-next-line no-console
+      console.warn('buildClicker: profile generation failed, falling back to flat', err);
+      warnings.push(`profile-generation-failed err=${String(err)}`);
+      capVolume = ctx.extrudeAt(plate, backing + imageDepth, slabBottomZ, sectionIsEmpty);
+    }
+  }
+  let capSurfaceShell = capVolume;
+  if (profile !== 'flat') {
+    try {
+      const innerCap = buildProfileVolume(plate, Math.max(0, backing), pHeight, slabBottomZ, profile);
+      capSurfaceShell = ctx.track(capVolume.subtract(innerCap));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('buildClicker: surface shell generation failed, falling back to translated shell', err);
+      warnings.push(`surface-shell-failed err=${String(err)}`);
+      capSurfaceShell = ctx.track(capVolume.subtract(ctx.track(capVolume.translate([0, 0, -imageDepth]))));
+    }
+  }
+
+  const capTopZ = slabTopZ + (profile === 'flat' ? 0 : pHeight);
+  let placedHole2D: any = null; 
+  const holesByLevel = new Map<number, any>();
+
+  // --- Tạo Các Mảng Màu (Inlays) ---
   for (const { r } of regions.map(r => ({ r })).sort((a, b) => (a.r.coverage ?? 1) - (b.r.coverage ?? 1))) {
-    const validRings = scaleRings(r.rings).filter(ring => ring.length >= 3 && getRingArea(ring) > 0.001);
+    const validRings = scaleRings(r.rings).filter(ring => ring.length >= 3 && Math.abs(getRingArea(ring)) > MIN_AREA);
     if (validRings.length === 0) continue;
-    let cs = ctx.simp(ctx.track(new ctx.wasm.CrossSection(validRings, 'NonZero')));
-    if (params.colorBleed > 0.001) cs = ctx.grow(cs, params.colorBleed);
-    let fp = ctx.track(cs.intersect(imageArea));
-    if (sectionIsEmpty(fp)) continue;
-    if (placed2D) fp = ctx.track(fp.subtract(placed2D));
-    if (sectionIsEmpty(fp)) continue;
-    placed2D = placed2D ? ctx.track(placed2D.add(fp)) : fp;
 
-    const level = params.componentHeights?.[r.partName] ?? 0, heightShift = level * params.stepHeight;
-    const topZ = slabTopZ + Math.max(0, heightShift), bottomZ = imageBottomZ + Math.min(0, heightShift);
-    let inlay = ctx.extrudeAt(fp, topZ - bottomZ, bottomZ, sectionIsEmpty);
+    let baseCs = ctx.simp(ctx.track(new ctx.wasm.CrossSection(validRings, 'NonZero')));
+    let fatCs = params.colorBleed > 0.001 ? ctx.grow(baseCs, params.colorBleed) : baseCs;
+
+    let fp = ctx.track(fatCs.intersect(fatImageArea)); 
+    let holeFp = ctx.track(baseCs.intersect(imageArea));
+
+    if (sectionIsEmpty(fp)) continue;
+
+    if (placedHole2D) {
+      fp = ctx.track(fp.subtract(placedHole2D)); 
+      holeFp = ctx.track(holeFp.subtract(placedHole2D));
+    }
+    if (sectionIsEmpty(fp)) continue;
+
+    placedHole2D = placedHole2D ? ctx.track(placedHole2D.add(holeFp)) : holeFp;
+
+    const level = params.componentHeights?.[r.partName] ?? 0;
+    const heightShift = level * params.stepHeight;
+    const bottomZ = imageBottomZ + Math.min(0, heightShift);
+
+    const inlayVolume = ctx.extrudeAt(fp, (capTopZ - bottomZ) + Math.max(0, heightShift) + 1.0, bottomZ, sectionIsEmpty);
+    if (inlayVolume.isEmpty()) continue;
+
+    let boundingVolume = capSurfaceShell;
+    if (Math.abs(heightShift) > 0.001) {
+      boundingVolume = ctx.track(capSurfaceShell.translate([0, 0, heightShift]));
+    }
+    let inlay = ctx.track(inlayVolume.intersect(boundingVolume));
+
     if (inlay.isEmpty()) continue;
 
     const es = params.edgeSettings?.find(s => s.target === r.partName);
-    const eStyle = es && es.style !== 'none' && es.radius >= 0.05 ? es.style : (params.extrudeChamfer && heightShift > 0 ? 'chamfer' : null);
+    // If an explicit edge setting exists use it (and require a minimum radius).
+    // Otherwise, when extrudeChamfer is enabled apply a chamfer for any
+    // non-zero height shift (both raised and lowered parts) to get smooth edges.
+    const hasExtrudeChamfer = params.extrudeChamfer && Math.abs(heightShift) > 0.001;
+    const eStyle = es && es.style !== 'none' && es.radius >= 0.05 ? es.style : (hasExtrudeChamfer ? 'chamfer' : null);
     if (eStyle) {
+      const topZ = capTopZ + Math.max(0, heightShift);
       const radius = Math.min(es ? es.radius : 0.5, (topZ - bottomZ) * 0.49, 3.0);
       if (radius >= 0.05) { const modBlock = createEdgeBevelBlock(ctx, fp, radius, eStyle, topZ, false); if (modBlock) inlay = ctx.track(inlay.subtract(modBlock)); }
     }
     parts.push(toPart(inlay, 'cap', 'top', r.filamentRgb, r.partName));
-    holesByLevel.set(level, holesByLevel.get(level) ? ctx.track(holesByLevel.get(level).add(fp)) : fp);
+    holesByLevel.set(level, holesByLevel.get(level) ? ctx.track(holesByLevel.get(level).add(holeFp)) : holeFp);
   }
 
-  let base = cap;
+  // --- Khắc rãnh trên khối nền chính ---
+  let base = capVolume;
   if (!(params as any).mergeTopFrame) {
-    for (const [level, hole2D] of holesByLevel.entries()) base = ctx.track(base.subtract(ctx.extrudeAt(hole2D, slabTopZ - (imageBottomZ + Math.min(0, level * params.stepHeight)) + 0.02, (imageBottomZ + Math.min(0, level * params.stepHeight)) - 0.01, sectionIsEmpty)));
+    for (const [level, hole2D] of holesByLevel.entries()) {
+      const heightShift = level * params.stepHeight;
+      const bottomZ = imageBottomZ + Math.min(0, heightShift);
+      const holeColumn = ctx.extrudeAt(hole2D, (capTopZ - bottomZ) + Math.max(0, heightShift) + 1.0, bottomZ - 0.01, sectionIsEmpty);
+      const holeShell = Math.abs(heightShift) > 0.001
+        ? ctx.track(capSurfaceShell.translate([0, 0, heightShift]))
+        : capSurfaceShell;
+      const holeVolume = ctx.track(holeColumn.intersect(holeShell));
+      base = ctx.track(base.subtract(holeVolume));
+    }
   }
 
   if (!isFlatKeychain) {
@@ -175,40 +313,58 @@ export function buildClicker(
   // --- 5. Khung Đế Hạt Cà Phê (Body) ---
   let body = applyEdges(ctx, ctx.extrudeAt(bodyFootprint, bodyTopZ - bodyBottomZ, bodyBottomZ, sectionIsEmpty), params.edgeSettings, bodyFootprint, bodyBottomZ, bodyTopZ);
 
-  // Đục thủng hộc switch
   body = ctx.track(body.subtract(ctx.extrudeAt(wellFootprint, bodyTopZ - wellFloorZ + 1, wellFloorZ, sectionIsEmpty)));
 
-  // --- 6. Đúc Mảng Màu Hạt Cà Phê Phủ Trọn Mặt Trên Của Đế ---
+  // --- 6. Đúc Mảng Màu Hạt Cà Phê ---
   if (params.bottomRegions && params.bottomRegions.length > 0 && customBasePlate) {
-    for (const r of params.bottomRegions) {
-      const validRings = scaleRings(r.rings).filter(ring => ring.length >= 3 && getRingArea(ring) > 0.001);
+    let placedBottomHole2D: any = null;
+
+    for (const { r } of params.bottomRegions.map(r => ({ r })).sort((a, b) => (a.r.coverage ?? 1) - (b.r.coverage ?? 1))) {
+      const validRings = scaleRings(r.rings).filter(ring => ring.length >= 3 && Math.abs(getRingArea(ring)) > MIN_AREA);
       if (validRings.length === 0) continue;
-      let cs = ctx.simp(ctx.track(new ctx.wasm.CrossSection(validRings, 'NonZero')));
+
+      let baseCs = ctx.simp(ctx.track(new ctx.wasm.CrossSection(validRings, 'NonZero')));
+      let fatCs = params.colorBleed > 0.001 ? ctx.grow(baseCs, params.colorBleed) : baseCs;
 
       const bRot = params.bottomRotation ?? 0;
       const bX = params.bottomOffsetX ?? 0;
       const bY = params.bottomOffsetY ?? 0;
 
-      if (Math.abs(bRot) > 0.001) cs = ctx.track(cs.rotate(bRot));
-      if (Math.abs(bX) > 0.001 || Math.abs(bY) > 0.001) cs = ctx.track(cs.translate([bX, bY]));
-
+      if (Math.abs(bRot) > 0.001) {
+        baseCs = ctx.track(baseCs.rotate(bRot));
+        fatCs = ctx.track(fatCs.rotate(bRot));
+      }
+      if (Math.abs(bX) > 0.001 || Math.abs(bY) > 0.001) {
+        baseCs = ctx.track(baseCs.translate([bX, bY]));
+        fatCs = ctx.track(fatCs.translate([bX, bY]));
+      }
       if (bottomScaleFactor > 1.001) {
-        cs = ctx.track(cs.scale([bottomScaleFactor, bottomScaleFactor]));
+        baseCs = ctx.track(baseCs.scale([bottomScaleFactor, bottomScaleFactor]));
+        fatCs = ctx.track(fatCs.scale([bottomScaleFactor, bottomScaleFactor]));
       }
 
-      // Trừ hộc switch chính giữa
-      cs = ctx.track(cs.subtract(wellFootprint));
-      if (sectionIsEmpty(cs)) continue;
+      let fp = ctx.track(fatCs.subtract(wellFootprint));
+      let holeFp = ctx.track(baseCs.subtract(wellFootprint));
+
+      if (sectionIsEmpty(fp)) continue;
+
+      if (placedBottomHole2D) {
+        fp = ctx.track(fp.subtract(placedBottomHole2D));
+        holeFp = ctx.track(holeFp.subtract(placedBottomHole2D));
+      }
+      if (sectionIsEmpty(fp)) continue;
+
+      placedBottomHole2D = placedBottomHole2D ? ctx.track(placedBottomHole2D.add(holeFp)) : holeFp;
 
       const level = params.componentHeights?.[r.partName] ?? 0;
       const heightShift = level * params.stepHeight;
       const topZ = bodyTopZ + Math.max(0, heightShift);
       const bottomZ = bodyTopZ - Math.max(0.2, params.imageDepth) + Math.min(0, heightShift);
       
-      let inlay = ctx.extrudeAt(cs, topZ - bottomZ, bottomZ, sectionIsEmpty);
+      let inlay = ctx.extrudeAt(fp, topZ - bottomZ, bottomZ, sectionIsEmpty);
       if (!inlay.isEmpty()) {
         parts.push(toPart(inlay, 'body', 'base', r.filamentRgb, r.partName));
-        body = ctx.track(body.subtract(ctx.extrudeAt(cs, topZ - bottomZ + 0.01, bottomZ - 0.01, sectionIsEmpty)));
+        body = ctx.track(body.subtract(ctx.extrudeAt(holeFp, topZ - bottomZ + 0.01, bottomZ - 0.01, sectionIsEmpty)));
       }
     }
   }
@@ -246,5 +402,15 @@ export function buildClicker(
   }
 
   ctx.cleanup();
-  return { parts, switchPlacements: applied, warnings: pinched ? ['Switches pulled together to fit the cap.'] : [] };
+  const finalWarnings = warnings.concat(pinched ? ['Switches pulled together to fit the cap.'] : []);
+  return { parts, switchPlacements: applied, warnings: finalWarnings };
 }
+
+
+
+
+
+
+
+
+

@@ -46,9 +46,9 @@ function assetToSolid(wasm: any, buf: ArrayBuffer): { solid: any; info: string }
 }
 
 self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
+  const msg = e.data;
   try {
     const wasm = await getModule();
-    const msg = e.data;
 
     if (msg.type === 'init') {
       socket?.delete?.();
@@ -125,14 +125,23 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
         transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
       }
 
+      // Post parts and include any non-fatal build warnings collected in buildClicker
       post({ type: 'parts', parts, switchPlacements, warnings }, transfer);
       return;
     }
   } catch (err) {
+    const ctx: any = { msgType: msg?.type };
+    try {
+      if (msg && (msg as any).params) ctx.params = { topProfile: (msg as any).params.topProfile, topProfileHeight: (msg as any).params.topProfileHeight, extrudeChamfer: (msg as any).params.extrudeChamfer };
+    } catch (e) {
+      /* ignore */
+    }
+    const baseMsg = err instanceof Error ? (err.stack ?? err.message) : String(err);
+    const ctxStr = JSON.stringify(ctx);
     post({
       type: 'error',
-      message: err instanceof Error ? (err.stack ?? err.message) : String(err),
-    });
+      message: `${baseMsg} | context=${ctxStr}`,
+    } as any);
   }
 };
 

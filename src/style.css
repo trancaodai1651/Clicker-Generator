@@ -2171,58 +2171,6 @@ button.fil-chip:active {
 }
 
 
-/* =========================================
-   SHADOW BOX UI - LAYER MANAGER
-========================================= */
-.layer-manager {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.layer-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: var(--panel-bg, #1e293b);
-  border: 1px solid var(--border, #334155);
-  border-radius: 8px;
-  cursor: grab;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.layer-item:active {
-  cursor: grabbing;
-  transform: scale(1.02);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-  border-color: #3b82f6;
-  z-index: 10;
-}
-
-.layer-color-chip {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.layer-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.layer-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--fg);
-}
-
-.layer-desc {
-  font-size: 11px;
   color: var(--muted);
 }
 

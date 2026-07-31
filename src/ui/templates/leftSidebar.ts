@@ -54,21 +54,28 @@ export const renderLeftSidebar = () => `
         <label for="width">Size ${tip('Overall size of the clicker (its longest side, in mm). This scales the whole model proportionally, not just the width.')}</label>
         <input type="text" class="val" id="widthVal" />
       </div>
-      <input type="range" id="width" min="20" max="200" step="1" />
+      <input type="range" id="width" min="20" max="250" step="1" />
+    </div>
+    <div class="prow-stacked">
+      <div class="prow-header">
+        <label for="baseHeight">Base height ${tip('Chiều cao phần đế dưới, riêng biệt so với độ cao профайл đỉnh.')}</label>
+        <input type="text" class="val" id="baseHeightVal" />
+      </div>
+      <input type="range" id="baseHeight" min="2" max="250" step="0.5" />
     </div>
     <div class="prow-stacked">
       <div class="prow-header">
         <label for="margin">Padding ${tip('Khoảng đệm từ mép hình ảnh đến chân của khung viền ngoài.')}</label>
         <input type="text" class="val" id="marginVal" />
       </div>
-      <input type="range" id="margin" min="0" max="15" step="0.1" />
+      <input type="range" id="margin" min="0" max="250" step="0.1" />
     </div>
     <div class="prow-stacked">
       <div class="prow-header">
         <label for="borderwidth">Border thickness ${tip('Độ dày của viền ngoài bao quanh hình ảnh, tính bằng mm.')}</label>
         <input type="text" class="val" id="borderwidthVal" />
       </div>
-      <input type="range" id="borderwidth" min="0" max="15" step="0.1" />
+      <input type="range" id="borderwidth" min="0" max="250" step="0.1" />
     </div>
     <div class="switch-row" style="margin-top: 12px; margin-bottom: 12px;">
       <span class="switch-label">Merge base & image ${tip('Hợp nhất phần nền viền (Top Base) và hình ảnh (Image) thành một khối đồng nhất, hoặc tách rời chúng.')}</span>

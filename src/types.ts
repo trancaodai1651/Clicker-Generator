@@ -144,6 +144,10 @@ export interface BuildParams {
   bottomRotation?: number;
   bottomRegions?: BuildRegion[];
   bottomExpandPercent?: number;
+  // 🟢 THÊM 3 DÒNG NÀY: Cấu hình Khối 3D
+  topProfile?: 'flat' | 'dome' | 'cone';
+  topProfileHeight?: number;
+  baseHeight?: number;
 }
 
 /** Mesh payload (transferable). First 3 of each `numProp` stride are x,y,z. */

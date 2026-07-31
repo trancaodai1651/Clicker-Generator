@@ -98,14 +98,27 @@ export const renderLeftSettings = () => `
           </div>
         </div>
 
+        <!-- 🟢 3D SURFACE PROFILE -->
+        <div class="field" style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px;">
+          <label>3D Surface Profile (Khối nổi bề mặt) ${tip('Đúc nắp thành dạng Bán cầu (Dome) hoặc Chóp nón (Cone) thay vì mặt phẳng.')}</label>
+          <div class="tabs" id="topProfileTabs" role="tablist">
+            <button class="tab active" data-profile="flat" type="button">Flat (Phẳng)</button>
+            <button class="tab" data-profile="dome" type="button">Dome (Bán cầu)</button>
+            <button class="tab" data-profile="cone" type="button">Cone (Chóp nón)</button>
+          </div>
+        </div>
+        <div class="prow-stacked" id="profileHeightRow" style="display:none; margin-top:8px; margin-bottom: 16px;">
+          <div class="prow-header"><label>Độ cao chóp / vòm</label><input type="text" class="val" id="profileHeightVal" value="5.0 mm" /></div>
+          <input type="range" id="profileHeight" min="2" max="250" step="0.5" value="5" />
+        </div>
+
         <!-- THICKNESS & TOLERANCES -->
         <div class="prow-stacked">
           <div class="prow-header">
             <label for="topthick">Top thickness (Độ dày nắp / đế phẳng)</label>
             <input type="text" class="val" id="topthickVal" />
           </div>
-          <!-- 🟢 Tăng max từ 4 lên 10 (hoặc bất kỳ độ dày nào bạn muốn) -->
-          <input type="range" id="topthick" min="1" max="100" step="0.1" />
+          <input type="range" id="topthick" min="0" max="250" step="0.1" />
         </div>
         <div class="prow-stacked">
           <div class="prow-header"><label for="imgdepth">Image depth</label><input type="text" class="val" id="imgdepthVal" /></div>

@@ -23,6 +23,10 @@ export const renderRightImport = () => `
         <span class="switch-label">Remove background ${tip('Automatically removes a solid background.')}</span>
         <label class="toggle"><input id="removebg" type="checkbox" /><span class="slider"></span></label>
       </div>
+      <div class="switch-row">
+        <span class="switch-label">Chibi style ${tip('Flatten noisy phone photos into simplified flat color regions for cute 2D output.')}</span>
+        <label class="toggle"><input id="photoFlatten" type="checkbox" /><span class="slider"></span></label>
+      </div>
       <span class="sample-heading">Choose a sample image</span>
       <div class="sample-inline-grid" id="sampleGrid">
         ${SAMPLES.map((s, idx) => `

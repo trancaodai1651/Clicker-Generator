@@ -33,10 +33,30 @@ export class BuildContext {
   };
 
   extrudeAt = (cs: any, h: number, z: number, isEmpty: (s: any) => boolean): any => {
-    if (isEmpty(cs)) {
+    const makeEmpty = () => {
       const dummy = this.track(this.track(this.wasm.Manifold.extrude(this.track(this.wasm.CrossSection.circle(0.1, 3)), 0.1)).translate([0, 0, z]));
       return this.track(dummy.subtract(dummy));
+    };
+
+    try {
+      if (isEmpty(cs)) {
+        return makeEmpty();
+      }
+    } catch (err) {
+      // If testing emptiness fails, preserve stability by returning an empty solid.
+      // eslint-disable-next-line no-console
+      console.warn('BuildContext.extrudeAt: isEmpty check failed', err);
+      return makeEmpty();
     }
-    return this.track(this.track(this.wasm.Manifold.extrude(cs, Math.max(0.01, h))).translate([0, 0, z]));
+
+    try {
+      const solid = this.track(this.wasm.Manifold.extrude(cs, Math.max(0.01, h)));
+      return this.track(solid.translate([0, 0, z]));
+    } catch (err) {
+      // If the extrude operation itself fails, return an empty solid rather than crashing.
+      // eslint-disable-next-line no-console
+      console.warn('BuildContext.extrudeAt: extrude failed', err);
+      return makeEmpty();
+    }
   };
 }

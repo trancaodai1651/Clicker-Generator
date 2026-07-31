@@ -3,10 +3,7 @@ import { gsap } from 'gsap';
 export function setupScreens() {
   const dashboardScreen = document.getElementById('dashboard-screen');
   const toolScreen = document.getElementById('tool-screen');
-  const shadowBoxScreen = document.getElementById('shadowbox-screen');
-  
   const btnOpenClicker = document.getElementById('btn-open-clicker');
-  const btnOpenShadowBox = document.getElementById('btn-open-shadowbox');
 
   // Animation vào Dashboard khi mới load trang
   if (dashboardScreen) {
@@ -21,7 +18,7 @@ export function setupScreens() {
       return;
     }
     if (!targetScreen) {
-      console.error("🚨 LỖI: Không tìm thấy màn hình đích trong index.html! Hãy chắc chắn bạn đã paste đoạn <section id='shadowbox-screen'>...</section> vào file HTML.");
+      console.error("🚨 LỖI: Không tìm thấy màn hình đích trong index.html.");
       return;
     }
 
@@ -46,16 +43,9 @@ export function setupScreens() {
     console.error("🚨 LỖI: Không tìm thấy nút có id='btn-open-clicker'");
   }
 
-  if (btnOpenShadowBox) {
-    btnOpenShadowBox.addEventListener('click', () => openScreen(shadowBoxScreen));
-  } else {
-    console.error("🚨 LỖI: Không tìm thấy nút có id='btn-open-shadowbox'");
-  }
-
   // Trả về các đối tượng để các Tool sử dụng
   return {
     toolScreen,
-    shadowBoxScreen,
     backToDashboard: (currentScreen: HTMLElement) => {
       if (!dashboardScreen || !currentScreen) return;
       const tl = gsap.timeline();

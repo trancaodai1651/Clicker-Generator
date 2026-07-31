@@ -50,6 +50,10 @@ export function setupEngine(viewer: any, initAssetsFn: () => void, loadDefaultCl
           hasParts: msg.parts.length > 0,
           status: msg.warnings && msg.warnings.length ? msg.warnings[0] : '',
         });
+        if (msg.warnings && msg.warnings.length > 1) {
+          // Log remaining warnings to console for debugging
+          for (let i = 1; i < msg.warnings.length; i++) console.warn('Worker warning:', msg.warnings[i]);
+        }
         appData.isInitialLoad = false;
         
         import('../store/historyManager').then(m => {
@@ -61,6 +65,7 @@ export function setupEngine(viewer: any, initAssetsFn: () => void, loadDefaultCl
         break;
       case 'error':
         store.set({ building: false, status: 'Error: ' + firstLine(msg.message) });
+        if ((msg as any).context) console.warn('Worker error context:', (msg as any).context);
         appData.isInitialLoad = false;
         break;
     }
@@ -115,7 +120,10 @@ export function reprocess() {
     store.set({ building: true, status: 'Removing background & tracing…' });
     const imgClone = { data: new Uint8ClampedArray(appData.originalImage.data), width: appData.originalImage.width, height: appData.originalImage.height };
     appData.regionSet = processImage(imgClone, s.colorCount, {
-      removeBg: s.removeBg, smoothing: s.smoothing, customColors: s.colorMode === 'limited' ? s.limitedColors : undefined,
+      removeBg: s.removeBg,
+      smoothing: s.smoothing,
+      customColors: s.colorMode === 'limited' ? s.limitedColors : undefined,
+      photoFlatten: s.photoFlatten,
     });
   } else if (s.importMode === 'svg') {
     if (!appData.currentSvgText) { store.set({ status: 'Upload an SVG file first.' }); return; }
@@ -179,8 +187,9 @@ export function rebuild(quiet = false) {
   const capBaseColor: RGB = s.baseColorOverride ?? deriveFrameColor(s);
 
   const params: BuildParams = {
-    baseShape: effectiveBaseShape, capWidthMm: s.capWidthMm, topThickness: Math.max(1, s.topThickness),
+    baseShape: effectiveBaseShape, capWidthMm: s.capWidthMm, topThickness: Math.max(0, s.topThickness),
     imageDepth: s.imageDepth, imageMargin: s.imageMargin, borderWidth: s.borderWidth, mergeTopFrame: s.mergeTopFrame,
+    baseHeight: Math.max(0, s.baseHeight),
     keepMeshesSeparate: s.keepMeshesSeparate, isFlatKeychain: s.isFlatKeychain, capProud: 4.0, tolerance: s.tolerance,
     stemTolerance: s.stemTolerance, colorBleed: 0.12, stepHeight: 0.6, travel: 4.0, floorThickness: 1.6,
     switches: s.switches, keychain: s.keychain, baseFilamentRgb: capBaseColor, bodyColorRgb: s.bodyColorRgb ?? [120, 124, 130],
@@ -192,12 +201,21 @@ export function rebuild(quiet = false) {
     bottomRotation: (s as any).bottomRotation ?? 0,
     bottomExpandPercent: (s as any).bottomExpandPercent ?? 22, // 🟢 Mặc định 22%
     bottomRegions,
+    topProfile: (s as any).topProfile || 'flat',
+    topProfileHeight: (s as any).topProfileHeight || 5.0,
+    
   };
 
   const bottomOutline = appData.bottomRegionSet ? appData.bottomRegionSet.outline : undefined;
 
   if (!quiet) store.set({ building: !appData.isInitialLoad, status: 'Building clicker…' });
-  worker.postMessage({ type: 'buildClicker', regions, outline: appData.regionSet.outline, params, bottomOutline });
+  console.log('Engine: posting buildClicker to worker, params.extrudeChamfer=', params.extrudeChamfer);
+  try {
+    worker.postMessage({ type: 'buildClicker', regions, outline: appData.regionSet.outline, params, bottomOutline });
+  } catch (e) {
+    console.error('Engine: worker.postMessage failed', e);
+    store.set({ building: false, status: 'Error: worker postMessage failed' });
+  }
 }
 
 export function applyModelRecolor(target: ColorTarget, rgb: RGB, partIndex: number, viewer: any) {

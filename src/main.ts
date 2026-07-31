@@ -11,12 +11,25 @@ import { reprocess, rebuild } from './core/engine';
 
 const base = import.meta.env.BASE_URL;
 const assetsPromise = Promise.all([
-  fetch(base + 'assets/switch/mx/mx-socket.3mf').then((r) => r.arrayBuffer()),
-  fetch(base + 'assets/switch/mx/mx-stem.3mf').then((r) => r.arrayBuffer()),
-  fetch(base + 'assets/switch/mx/mx-switch.3mf').then((r) => r.arrayBuffer()),
+  fetch(base + 'assets/switch/mx/mx-socket.3mf').then(async (r) => {
+    if (!r.ok) throw new Error('Failed to load mx-socket.3mf');
+    store.set({ status: 'Loading switch assets… socket' });
+    return await r.arrayBuffer();
+  }),
+  fetch(base + 'assets/switch/mx/mx-stem.3mf').then(async (r) => {
+    if (!r.ok) throw new Error('Failed to load mx-stem.3mf');
+    store.set({ status: 'Loading switch assets… stem' });
+    return await r.arrayBuffer();
+  }),
+  fetch(base + 'assets/switch/mx/mx-switch.3mf').then(async (r) => {
+    if (!r.ok) throw new Error('Failed to load mx-switch.3mf');
+    store.set({ status: 'Loading switch assets… switch' });
+    return await r.arrayBuffer();
+  }),
 ]).catch((err) => { console.error('[assets]', err); throw err; });
 
 async function initAssets() {
+    store.set({ status: 'Loading switch assets…' });
   try {
     const [socket, stem, sw] = await assetsPromise;
     import('./core/engine').then(m => m.worker.postMessage({ type: 'init', socket, stem, switch: sw }, [socket, stem, sw]));

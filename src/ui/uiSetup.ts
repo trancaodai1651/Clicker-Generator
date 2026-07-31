@@ -18,27 +18,7 @@ function defaultSwitchLayout(n: number, capWidthMm: number) {
 
 export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, statusEl: HTMLElement, viewer: any, screens: any, historyShortcuts: any) {
   
-  // 🟢 1. Gắn HTML Mockup cho Tool Khung Ảnh (Shadow Box)
-  const sbSidebarLeft = document.getElementById('sb-sidebar-left');
-  const sbSidebarRight = document.getElementById('sb-sidebar-right');
-  if (sbSidebarLeft && sbSidebarRight) {
-    sbSidebarLeft.innerHTML = `
-      <div class="app-header">
-        <button id="sb-btn-back" class="btn-back-home"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg> Dashboard</button>
-        <h1>Shadow Box</h1><p class="app-subtitle">Cấu hình khung và chân đế</p>
-      </div>
-      <div class="section"><span class="label">Tỉ lệ khung</span><select style="width:100%;margin-bottom:12px;padding:8px;border-radius:6px;"><option>Tự do (Bám theo ảnh)</option></select></div>
-    `;
-    sbSidebarRight.innerHTML = `
-      <div class="section"><span class="label">Hình ảnh</span><div class="drop"><div class="drop-title">Upload Image</div></div></div>
-      <div class="sidebar-sticky-footer" style="margin-top:auto;"><button class="primary" style="width:100%;padding:12px;">Export Frame</button></div>
-    `;
-    document.getElementById('sb-btn-back')?.addEventListener('click', () => {
-      screens.backToDashboard(screens.shadowBoxScreen!);
-    });
-  }
-
-  // 🟢 2. Cấu hình UI cho Tool Clicker Generator
+  // 🟢 Cấu hình UI cho Tool Clicker Generator
   const ui = createUi(sidebarLeft, sidebarRight, statusEl, {
     onBottomModeChange: (mode) => {
       store.set({ bottomBaseMode: mode });
@@ -85,6 +65,7 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
     onMergeTopFrame: (merge) => { store.set({ mergeTopFrame: merge }); debouncedRebuild(); },
     onKeepMeshesSeparate: (keep) => { store.set({ keepMeshesSeparate: keep }); debouncedRebuild(); },
     onWidth: (mm) => { store.set({ capWidthMm: mm }); debouncedRebuild(); },
+    onBaseHeight: (mm) => { store.set({ baseHeight: mm }); debouncedRebuild(); },
     onTopThickness: (mm) => { store.set({ topThickness: mm }); debouncedRebuild(); },
     onImageDepth: (mm) => { store.set({ imageDepth: mm }); debouncedRebuild(); },
     onImageMargin: (mm) => { store.set({ imageMargin: mm }); debouncedRebuild(); },
@@ -113,6 +94,7 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
     
     onSmoothing: (v) => { store.set({ smoothing: v }); if (store.get().importMode === 'image' && appData.originalImage) debouncedReprocess(); },
     onRemoveBg: (on) => { store.set({ removeBg: on }); const mode = store.get().importMode; if ((mode === 'image' && appData.originalImage) || (mode === 'svg' && appData.currentSvgText)) reprocess(); },
+    onPhotoFlatten: (on) => { store.set({ photoFlatten: on }); if (store.get().importMode === 'image' && appData.originalImage) debouncedReprocess(); },
     onView: (mode) => { store.set({ view: mode }); viewer.setView(mode); },
     onShowSwitch: (on) => { store.set({ showSwitch: on }); viewer.showSwitch(on); },
     onSection: (axis, pos) => viewer.setSection(axis, pos),

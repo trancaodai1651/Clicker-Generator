@@ -11,8 +11,9 @@ export interface RgbaImage {
 
 // Downscale ceiling and the minimum working resolution: small logos are upscaled to
 // MIN_WORKING so the tracer has enough resolution to make smooth curves.
-const TARGET = 1100;
-const MIN_WORKING = 900;
+// Use a higher quality default for photo imports so the saved file quality is maximized.
+const TARGET = 2000;
+const MIN_WORKING = 1400;
 
 let picaInstance: Pica | null = null;
 function getPica(): Pica {
@@ -80,34 +81,49 @@ export async function drawToImageData(
     filter = 'lanczos3';
   }
 
-  // Draw the source to a canvas at native size (pica works canvas → canvas).
-  const srcCanvas = document.createElement('canvas');
-  srcCanvas.width = srcW;
-  srcCanvas.height = srcH;
-  const sctx = srcCanvas.getContext('2d', { willReadFrequently: true })!;
-  sctx.clearRect(0, 0, srcW, srcH);
-  sctx.drawImage(src, 0, 0);
-
-  if (!filter || (w === srcW && h === srcH)) {
-    const img = sctx.getImageData(0, 0, srcW, srcH);
-    return { data: img.data, width: srcW, height: srcH };
-  }
-
   const dstCanvas = document.createElement('canvas');
   dstCanvas.width = w;
   dstCanvas.height = h;
+
+  if (!filter || (w === srcW && h === srcH)) {
+    const dctx = dstCanvas.getContext('2d', { willReadFrequently: true })!;
+    dctx.clearRect(0, 0, w, h);
+    dctx.drawImage(src, 0, 0, w, h);
+    const img = dctx.getImageData(0, 0, w, h);
+    return { data: img.data, width: w, height: h };
+  }
+
   try {
-    await getPica().resize(srcCanvas, dstCanvas, { filter });
+    // Prefer browser-native ImageBitmap resize when available; it can be faster
+    // than manual pica resizing for very large phone photos.
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const resized = await createImageBitmap(src, {
+          resizeWidth: w,
+          resizeHeight: h,
+          resizeQuality: 'high',
+        } as ImageBitmapOptions);
+        const dctx = dstCanvas.getContext('2d', { willReadFrequently: true })!;
+        dctx.clearRect(0, 0, w, h);
+        dctx.drawImage(resized, 0, 0);
+        resized.close();
+        const img = dctx.getImageData(0, 0, w, h);
+        return { data: img.data, width: w, height: h };
+      } catch {
+        // Fall back to pica below.
+      }
+    }
+
+    await getPica().resize(src as unknown as any, dstCanvas, { filter });
     const dctx = dstCanvas.getContext('2d', { willReadFrequently: true })!;
     const img = dctx.getImageData(0, 0, w, h);
     return { data: img.data, width: w, height: h };
   } catch {
-    // Fallback to the browser's built-in scaler if pica fails (workers blocked, etc.).
     const dctx = dstCanvas.getContext('2d', { willReadFrequently: true })!;
     dctx.imageSmoothingEnabled = true;
     dctx.imageSmoothingQuality = 'high';
     dctx.clearRect(0, 0, w, h);
-    dctx.drawImage(srcCanvas, 0, 0, w, h);
+    dctx.drawImage(src, 0, 0, w, h);
     const img = dctx.getImageData(0, 0, w, h);
     return { data: img.data, width: w, height: h };
   }
