@@ -41,6 +41,7 @@ export function setupEngine(viewer: any, initAssetsFn: () => void, loadDefaultCl
         }
         break;
       case 'parts':
+      case 'blocksParts':
         appData.latestParts = msg.parts;
         viewer.setParts(msg.parts, !appData.isInitialLoad);
         viewer.setView(store.get().view);
@@ -115,7 +116,7 @@ export function reprocess() {
   store.set({ baseColorOverride: null });
   const s = store.get();
 
-  if (s.importMode === 'image') {
+  if (s.importMode === 'image' || s.importMode === 'hybrid') {
     if (!appData.originalImage) return;
     store.set({ building: true, status: 'Removing background & tracing…' });
     const imgClone = { data: new Uint8ClampedArray(appData.originalImage.data), width: appData.originalImage.width, height: appData.originalImage.height };
@@ -137,6 +138,12 @@ export function reprocess() {
       store.set({ building: true, status: 'Parsing Icon…' });
       appData.regionSet = parseSvg(appData.currentIconText);
     } catch (e: any) { store.set({ building: false, status: 'Error: ' + e.message }); return; }
+  } else if (s.importMode === 'blocks') {
+    try {
+      store.set({ building: true, status: 'Generating blocks…' });
+      const text = s.blockSlots.map(slot => slot.ch).join('');
+      appData.regionSet = parseLetter(text || 'Name', appData.currentFontId, 24, true);
+    } catch (e: any) { store.set({ building: false, status: 'Error: ' + e.message }); return; }
   } else if (s.importMode === 'text') {
     try {
       store.set({ building: true, status: 'Generating Text…' });
@@ -145,9 +152,11 @@ export function reprocess() {
   }
 
   if (!appData.regionSet) return;
-  const palette: PaletteEntry[] = appData.regionSet.regions.map((r, i) => ({
-    quantRgb: r.quantRgb, filamentRgb: s.paletteOverrides[i] ?? r.quantRgb, coverage: r.coverage,
-  }));
+  const palette: PaletteEntry[] = s.importMode === 'blocks'
+    ? [{ quantRgb: [247, 247, 245], filamentRgb: s.paletteOverrides[0] ?? [247, 247, 245], coverage: 1 }]
+    : appData.regionSet.regions.map((r, i) => ({
+        quantRgb: r.quantRgb, filamentRgb: s.paletteOverrides[i] ?? r.quantRgb, coverage: r.coverage,
+      }));
   store.set({ palette });
 
   if (palette.length === 0) {
@@ -188,7 +197,7 @@ export function rebuild(quiet = false) {
 
   const params: BuildParams = {
     baseShape: effectiveBaseShape, capWidthMm: s.capWidthMm, topThickness: Math.max(0, s.topThickness),
-    imageDepth: s.imageDepth, imageMargin: s.imageMargin, borderWidth: s.borderWidth, mergeTopFrame: s.mergeTopFrame,
+    imageDepth: s.imageDepth, hybridImageSizeMm: s.hybridImageSizeMm, imageMargin: s.imageMargin, borderWidth: s.borderWidth, mergeTopFrame: s.mergeTopFrame,
     baseHeight: Math.max(0, s.baseHeight),
     keepMeshesSeparate: s.keepMeshesSeparate, isFlatKeychain: s.isFlatKeychain, capProud: 4.0, tolerance: s.tolerance,
     stemTolerance: s.stemTolerance, colorBleed: 0.12, stepHeight: 0.6, travel: 4.0, floorThickness: 1.6,
@@ -209,9 +218,96 @@ export function rebuild(quiet = false) {
   const bottomOutline = appData.bottomRegionSet ? appData.bottomRegionSet.outline : undefined;
 
   if (!quiet) store.set({ building: !appData.isInitialLoad, status: 'Building clicker…' });
-  console.log('Engine: posting buildClicker to worker, params.extrudeChamfer=', params.extrudeChamfer);
+  const isBlocks = s.importMode === 'blocks';
+  const isHybrid = s.importMode === 'hybrid';
   try {
-    worker.postMessage({ type: 'buildClicker', regions, outline: appData.regionSet.outline, params, bottomOutline });
+    if (isBlocks) {
+      worker.postMessage({
+        type: 'buildBlocks',
+        params: {
+          requestId: Date.now(),
+          blockWidthMm: 18,
+          blockHeightMm: 18,
+          blockDepthMm: 6,
+          blockGapMm: 2.2,
+          cornerRadiusMm: 4,
+          fontSize: 15 * s.legendScale,
+          legendBold: s.legendBold,
+          vertical: s.blockOrientation === 'vertical',
+          glyphs: appData.regionSet.regions.map((r, i) => ({
+            rings: r.components.flatMap((component) => component.rings),
+            // Blocks use a consistent dark legend so it stays readable on the
+            // white keycaps, independent of the text palette from other modes.
+            filamentRgb: [145, 145, 148] as RGB,
+            partName: `top-color-${i}-0`,
+          })),
+          bodyColorRgb: s.bodyColorRgb ?? [238, 238, 240],
+          capColorRgb: [247, 247, 245],
+          stemTolerance: s.stemTolerance,
+          travel: 4,
+          keycapGapMm: s.blockKeycapGapMm,
+          flatBottom: s.blockFlatBottom,
+          baseHeightMm: s.blockModuleThicknessMm,
+          moduleThicknessMm: s.blockModuleThicknessMm,
+          moduleSideThicknessMm: s.blockModuleSideThicknessMm,
+          baseCornerRadiusMm: s.blockBaseCornerRadiusMm,
+          keycapHeightMm: s.blockKeycapHeightMm,
+          keycapThicknessMm: s.blockKeycapThicknessMm,
+          keycapCornerRadiusMm: s.blockKeycapCornerRadiusMm,
+          keycapShape: s.blockKeycapShape,
+          keycapMount: s.blockKeycapMount,
+          keycapProfile: s.blockKeycapProfile,
+          keycapUnit: s.blockKeycapUnit,
+          squareModuleBase: s.hybridSquareModuleBase,
+          keychainEnd: 'left',
+        },
+      });
+    } else if (isHybrid) {
+      const blockText = s.blockSlots.map(slot => slot.ch).join('') || 'Name';
+      const blockRegionSet = parseLetter(blockText, appData.currentFontId, 24, true);
+      worker.postMessage({
+        type: 'buildHybridClicker',
+        regions,
+        outline: appData.regionSet.outline,
+        params,
+        blockParams: {
+          blockWidthMm: 18,
+          blockHeightMm: 18,
+          blockDepthMm: 6,
+          blockGapMm: 2.2,
+          cornerRadiusMm: 4,
+          fontSize: 15 * s.legendScale,
+          legendBold: s.legendBold,
+          vertical: s.blockOrientation === 'vertical',
+          glyphs: blockRegionSet.regions.map((r, i) => ({
+            rings: r.components.flatMap((component) => component.rings),
+            filamentRgb: [145, 145, 148] as RGB,
+            partName: `block-color-${i}`,
+          })),
+          bodyColorRgb: s.bodyColorRgb ?? [238, 238, 240],
+          capColorRgb: [247, 247, 245],
+          stemTolerance: s.stemTolerance,
+          travel: 4,
+          keycapGapMm: s.blockKeycapGapMm,
+          flatBottom: s.blockFlatBottom,
+          baseHeightMm: s.blockModuleThicknessMm,
+          moduleThicknessMm: s.blockModuleThicknessMm,
+          moduleSideThicknessMm: s.blockModuleSideThicknessMm,
+          baseCornerRadiusMm: s.blockBaseCornerRadiusMm,
+          keycapHeightMm: s.blockKeycapHeightMm,
+          keycapThicknessMm: s.blockKeycapThicknessMm,
+          keycapCornerRadiusMm: s.blockKeycapCornerRadiusMm,
+          keycapShape: s.blockKeycapShape,
+          keycapMount: s.blockKeycapMount,
+          keycapProfile: s.blockKeycapProfile,
+          keycapUnit: s.blockKeycapUnit,
+          squareModuleBase: s.hybridSquareModuleBase,
+          keychainEnd: 'left',
+        },
+      });
+    } else {
+      worker.postMessage({ type: 'buildClicker', regions, outline: appData.regionSet.outline, params, bottomOutline });
+    }
   } catch (e) {
     console.error('Engine: worker.postMessage failed', e);
     store.set({ building: false, status: 'Error: worker postMessage failed' });
@@ -230,9 +326,9 @@ export function applyModelRecolor(target: ColorTarget, rgb: RGB, partIndex: numb
       appData.latestParts[partIndex] = { ...appData.latestParts[partIndex], colorRgb: rgb };
       overrides[part.name] = rgb;
     } else {
-      const prefix = `top-color-${i}-`;
+      const prefixes = [`top-color-${i}-`, `hybrid-image-${i}`];
       appData.latestParts.forEach((p: ClickerPart, idx: number) => {
-        if (p.name.startsWith(prefix)) {
+        if (prefixes.some((prefix) => p.name.startsWith(prefix))) {
           viewer.setPartColor(idx, rgb);
           appData.latestParts[idx] = { ...appData.latestParts[idx], colorRgb: rgb };
           overrides[p.name] = rgb;
@@ -270,7 +366,7 @@ function dominantInk(s: ReturnType<typeof store.get>): RGB {
   for (let i = 1; i < s.palette.length; i++) if (s.palette[i].coverage > s.palette[domIdx].coverage) domIdx = i;
   return s.palette[domIdx]?.filamentRgb ?? [180, 180, 185];
 }
-function deriveFrameColor(s: ReturnType<typeof store.get>): RGB { const ink = dominantInk(s); return s.importMode === 'image' ? ink : contrastingFrame(ink); }
+function deriveFrameColor(s: ReturnType<typeof store.get>): RGB { const ink = dominantInk(s); return s.importMode === 'image' || s.importMode === 'hybrid' ? ink : contrastingFrame(ink); }
 
 function syncBaseColor(viewer: any) {
   const s = store.get();
@@ -283,7 +379,18 @@ function syncBaseColor(viewer: any) {
   }
 }
 function partColorTarget(name: string): ColorTarget | null {
-  if (name === 'base-body') return { kind: 'body' };
+  if (
+    name === 'base-body'
+    || name === 'blocks-base'
+    || name === 'blocks-flat-floor'
+    || /^blocks-side-wall-\d+$/.test(name)
+    || /^block-side-wall-\d+$/.test(name)
+  ) return { kind: 'body' };
+  if (/^block-\d+(?:-wall)?$/.test(name)) return { kind: 'body' };
+  if (name === 'hybrid-image-base' || name === 'hybrid-image-deck' || name === 'hybrid-image-bridge' || name === 'hybrid-image-transition' || name === 'hybrid-square-module-base') return { kind: 'body' };
+  if (/^hybrid-image-(\d+)$/.test(name)) return { kind: 'region', index: Number(name.slice('hybrid-image-'.length)), compIndex: 0 };
+  if (/^block-color-\d+$/.test(name)) return { kind: 'region', index: 0, compIndex: 0 };
+  if (/^cap-\d+$/.test(name)) return { kind: 'region', index: 0, compIndex: 0 };
   if (name === 'top-base') return { kind: 'base' };
   const m = /^top-color-(\d+)(?:-(\d+))?$/.exec(name);
   if (m) return { kind: 'region', index: +m[1], compIndex: m[2] ? +m[2] : 0 };

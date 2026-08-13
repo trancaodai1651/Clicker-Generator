@@ -135,6 +135,7 @@ export function parseLetter(text: string, fontId: string, maxLen = 30, separate 
   if (!text.trim()) throw new Error('Type a letter first.');
 
   const option = FONT_OPTIONS.find((font) => font.id === fontId) || FONT_OPTIONS[0];
+  const fallbackOption = FONT_OPTIONS[0];
   // Each glyph is a group of rings (its outline + any holes), kept grouped so we can
   // either merge them all into one element or expose each letter on its own.
   const glyphs: Ring[][] = [];
@@ -150,7 +151,19 @@ export function parseLetter(text: string, fontId: string, maxLen = 30, separate 
     const value = Array.from((rawLine || '').trim()).slice(0, maxLen).join('');
     if (!value) continue;
 
-    const shapes = option.font.generateShapes(value, 100);
+    let shapes: THREE.Shape[] = [];
+    try {
+      shapes = option.font.generateShapes(value, 100);
+    } catch (error) {
+      console.warn(`Font "${option.name}" failed for text; using Standard.`, error);
+    }
+    if (!shapes.length && option !== fallbackOption) {
+      try {
+        shapes = fallbackOption.font.generateShapes(value, 100);
+      } catch {
+        shapes = [];
+      }
+    }
     const lineBox = new THREE.Box2(
       new THREE.Vector2(Infinity, Infinity),
       new THREE.Vector2(-Infinity, -Infinity)
@@ -179,6 +192,38 @@ export function parseLetter(text: string, fontId: string, maxLen = 30, separate 
         }
       }
       if (glyphRings.length) lineGlyphs.push(glyphRings);
+    }
+
+    // A few imported/bundled fonts fail to emit outlines for individual
+    // characters (especially symbols). In Blocks mode each character must
+    // still produce one printable glyph, so retry missing characters with the
+    // built-in Standard font instead of silently dropping them.
+    if (separate && lineGlyphs.length < Array.from(value).length) {
+      lineGlyphs.length = 0;
+      for (const character of Array.from(value)) {
+        let characterShapes: THREE.Shape[] = [];
+        try { characterShapes = option.font.generateShapes(character, 100); } catch { /* fallback below */ }
+        if (!characterShapes.length && option !== fallbackOption) {
+          try { characterShapes = fallbackOption.font.generateShapes(character, 100); } catch { /* keep blank */ }
+        }
+        const extractedGlyph: Ring[] = [];
+        for (const shape of characterShapes) {
+          const extracted = shape.extractPoints(16);
+          if (extracted.shape.length >= 3) {
+            const ring = extracted.shape.map((p) => [p.x, p.y] as [number, number]);
+            extractedGlyph.push(ring);
+            ring.forEach(([x, y]) => lineBox.expandByPoint(new THREE.Vector2(x, y)));
+          }
+          for (const hole of extracted.holes) {
+            if (hole.length >= 3) {
+              const ring = hole.map((p) => [p.x, p.y] as [number, number]);
+              extractedGlyph.push(ring);
+              ring.forEach(([x, y]) => lineBox.expandByPoint(new THREE.Vector2(x, y)));
+            }
+          }
+        }
+        if (extractedGlyph.length) lineGlyphs.push(extractedGlyph);
+      }
     }
 
     if (lineGlyphs.length === 0) continue;

@@ -1,12 +1,16 @@
 node_modules/
 dist/
-*.local
-.DS_Store
+src-tauri/target/
 .vite/
 *.log
-
-# local backups / archives (e.g. project zip snapshots)
+*.local
 *.zip
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# local planning docs (AI agent manuals, not for the public repo)
+# Tauri / Rust build outputs
+src-tauri/gen/
+
+# Local planning notes
 New featrures dev plan.md

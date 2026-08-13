@@ -10,6 +10,37 @@ export function bindGlobalEvents(cb: UiCallbacks) {
   $('undoBtn')?.addEventListener('click', () => cb.onUndo());
   $('redoBtn')?.addEventListener('click', () => cb.onRedo());
   $('refreshBtn')?.addEventListener('click', () => cb.onRefresh());
+  $('importTabs')?.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-mode]') as HTMLElement | null;
+    if (target?.dataset.mode) cb.onImportMode(target.dataset.mode as any);
+  });
+  $('blockOrient')?.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-orient]') as HTMLElement | null;
+    if (target?.dataset.orient) cb.onBlockOrientation(target.dataset.orient as 'horizontal' | 'vertical');
+  });
+  $('legendSize')?.addEventListener('input', (e: Event) => cb.onLegendScale(+(e.target as HTMLInputElement).value));
+  $('legendBold')?.addEventListener('input', (e: Event) => cb.onLegendBold(+(e.target as HTMLInputElement).value));
+  $('blockKeycapGap')?.addEventListener('input', (e: Event) => cb.onBlockKeycapGap(+(e.target as HTMLInputElement).value));
+  $('blockFlatBottom')?.addEventListener('change', (e: Event) => cb.onBlockFlatBottom((e.target as HTMLInputElement).checked));
+  $('blockBaseHeight')?.addEventListener('input', (e: Event) => cb.onBlockBaseHeight(+(e.target as HTMLInputElement).value));
+  $('blockModuleThickness')?.addEventListener('input', (e: Event) => cb.onBlockModuleThickness(+(e.target as HTMLInputElement).value));
+  $('blockModuleSideThickness')?.addEventListener('input', (e: Event) => cb.onBlockModuleSideThickness(+(e.target as HTMLInputElement).value));
+  $('blockBaseCornerRadius')?.addEventListener('input', (e: Event) => cb.onBlockBaseCornerRadius(+(e.target as HTMLInputElement).value));
+  $('blockKeycapHeight')?.addEventListener('input', (e: Event) => cb.onBlockKeycapHeight(+(e.target as HTMLInputElement).value));
+  $('blockKeycapThickness')?.addEventListener('input', (e: Event) => cb.onBlockKeycapThickness(+(e.target as HTMLInputElement).value));
+  $('blockKeycapCornerRadius')?.addEventListener('input', (e: Event) => cb.onBlockKeycapCornerRadius(+(e.target as HTMLInputElement).value));
+  $('blockKeycapShape')?.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-keycap-shape]') as HTMLElement | null;
+    if (target?.dataset.keycapShape) cb.onBlockKeycapShape(target.dataset.keycapShape as 'rounded' | 'square');
+  });
+  $('blockKeycapMount')?.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-keycap-mount]') as HTMLElement | null;
+    if (target?.dataset.keycapMount) cb.onBlockKeycapMount(target.dataset.keycapMount as 'above' | 'recessed');
+  });
+  $('blockKeycapProfile')?.addEventListener('change', (e: Event) => cb.onBlockKeycapProfile((e.target as HTMLSelectElement).value as 'standard' | 'low' | 'thocky' | 'choc-v1'));
+  $('blockKeySize')?.addEventListener('change', (e: Event) => cb.onBlockKeySize(+(e.target as HTMLSelectElement).value));
+  $('hybridSquareModuleBase')?.addEventListener('change', (e: Event) => cb.onHybridSquareModuleBase((e.target as HTMLInputElement).checked));
+  $('hybridImageSize')?.addEventListener('input', (e: Event) => cb.onHybridImageSize(+(e.target as HTMLInputElement).value));
 
   // --- Color Count & Smoothing ---
   const ccount = $<HTMLSelectElement>('ccount');

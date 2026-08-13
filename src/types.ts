@@ -44,6 +44,11 @@ export interface PaletteEntry {
 export type BaseShapeKind = 'outline' | 'circle' | 'square' | 'hexagon' | 'heart' | 'star' | 'egg';
 export type ViewMode = 'assembled' | 'exploded' | 'section';
 
+export interface BlockSlot {
+  kind: 'char' | 'symbol';
+  ch: string;
+}
+
 /** Which interaction mode the viewport is in. */
 export type EditMode = 'color' | 'extrude' | 'edges';
 
@@ -118,6 +123,8 @@ export interface BuildParams {
   capWidthMm: number;
   topThickness: number;
   imageDepth: number;
+  /** Absolute image badge size in Image + Blocks mode (largest dimension, mm). */
+  hybridImageSizeMm?: number;
   imageMargin: number;
   borderWidth: number;
   capProud: number;
@@ -178,15 +185,99 @@ export interface BuildRegion {
   partName: string;
 }
 
+/** Geometry inputs for the separate-letter Blocks builder. */
+export interface BlockGlyph {
+  rings: Ring[];
+  filamentRgb?: RGB;
+  partName?: string;
+}
+
+export interface BlocksBuildParams {
+  requestId?: number;
+  blockWidthMm: number;
+  blockHeightMm: number;
+  blockDepthMm: number;
+  blockGapMm: number;
+  cornerRadiusMm: number;
+  fontSize: number;
+  legendBold: number;
+  vertical: boolean;
+  glyphs: BlockGlyph[];
+  bodyColorRgb?: RGB;
+  capColorRgb?: RGB;
+  stemTolerance?: number;
+  travel?: number;
+  keycapGapMm?: number;
+  /** Kept for legacy block geometry compatibility; the public builder no longer adds side rails. */
+  wallThicknessMm?: number;
+  flatBottom?: boolean;
+  baseHeightMm?: number;
+  moduleThicknessMm?: number;
+  moduleSideThicknessMm?: number;
+  baseCornerRadiusMm?: number;
+  keycapHeightMm?: number;
+  keycapThicknessMm?: number;
+  keycapCornerRadiusMm?: number;
+  keycapShape?: 'rounded' | 'square';
+  keycapMount?: 'above' | 'recessed';
+  /** Profile names exposed by the SVG Keycap Generator. */
+  keycapProfile?: 'standard' | 'low' | 'thocky' | 'choc-v1';
+  /** Key size in keyboard units (1u, 1.25u, ...). */
+  keycapUnit?: number;
+  squareModuleBase?: boolean;
+  keychainEnd?: 'left' | 'right' | 'top' | 'bottom';
+}
+
+export interface BlockAssetBuffers {
+  noSides: ArrayBuffer;
+  south: ArrayBuffer;
+  northSouth: ArrayBuffer;
+  northWest: ArrayBuffer;
+  northSouthWest: ArrayBuffer;
+  allSides: ArrayBuffer;
+  keycapJson: {
+    positions: number[];
+    indices: number[];
+    stem?: { positions: number[]; indices: number[] } | null;
+    meta: {
+      center: [number, number];
+      topZ: number;
+      dishBottomZ?: number;
+      topExtent?: [number, number];
+    };
+  };
+}
+
+export interface BlockAssetMessageBuffers {
+  blockNoSides: ArrayBuffer;
+  blockSouth: ArrayBuffer;
+  blockNorthSouth: ArrayBuffer;
+  blockNorthWest: ArrayBuffer;
+  blockNorthSouthWest: ArrayBuffer;
+  blockAllSides: ArrayBuffer;
+  keycapJson: BlockAssetBuffers['keycapJson'];
+}
+
 // ---- Worker messages ----
 export type GeometryRequest =
-  | { type: 'init'; socket: ArrayBuffer; stem: ArrayBuffer; switch: ArrayBuffer }
+  | ({ type: 'init'; socket: ArrayBuffer; stem: ArrayBuffer; switch: ArrayBuffer } & Partial<BlockAssetMessageBuffers>)
   | {
       type: 'buildClicker';
       regions: BuildRegion[];
       outline: Ring[];
       bottomOutline?: Ring[]; // 👈 THÊM DÒNG NÀY (Viền của tấm ảnh thứ 2)
       params: BuildParams;
+    }
+  | {
+      type: 'buildBlocks';
+      params: BlocksBuildParams;
+    }
+  | {
+      type: 'buildHybridClicker';
+      regions: BuildRegion[];
+      outline: Ring[];
+      params: BuildParams;
+      blockParams: BlocksBuildParams;
     };
 
 export type GeometryResponse =
@@ -199,5 +290,6 @@ export type GeometryResponse =
   // `warnings` surfaces non-fatal build notes (e.g. switches pulled together, no room
   // for the keychain hole) for the status line.
   | { type: 'parts'; parts: ClickerPart[]; switchPlacements: SwitchPlacement[]; warnings: string[] }
+  | { type: 'blocksParts'; requestId?: number; parts: ClickerPart[]; switchPlacements: SwitchPlacement[]; warnings: string[] }
   | { type: 'error'; message: string };
 export type ColorTarget = { kind: 'region'; index: number; compIndex: number } | { kind: 'body' } | { kind: 'base' };

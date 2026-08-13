@@ -94,6 +94,31 @@ export function createUi(
     if ($('imgdepth')) $<HTMLInputElement>('imgdepth').value = String(state.imageDepth); setVal('imgdepthVal', state.imageDepth.toFixed(1) + ' mm');
     if ($('margin')) $<HTMLInputElement>('margin').value = String(state.imageMargin); setVal('marginVal', state.imageMargin.toFixed(1) + ' mm');
     if ($('borderwidth')) $<HTMLInputElement>('borderwidth').value = String(state.borderWidth); setVal('borderwidthVal', state.borderWidth.toFixed(1) + ' mm');
+    if ($('legendSize')) $<HTMLInputElement>('legendSize').value = String(state.legendScale);
+    setVal('legendSizeVal', `${Math.round(state.legendScale * 100)}%`);
+    if ($('legendBold')) $<HTMLInputElement>('legendBold').value = String(state.legendBold);
+    setVal('legendBoldVal', `${state.legendBold > 0 ? '+' : ''}${state.legendBold.toFixed(2)} mm`);
+    if ($('blockKeycapGap')) $<HTMLInputElement>('blockKeycapGap').value = String(state.blockKeycapGapMm);
+    setVal('blockKeycapGapVal', `${state.blockKeycapGapMm.toFixed(1)} mm`);
+    if ($('blockFlatBottom')) $<HTMLInputElement>('blockFlatBottom').checked = state.blockFlatBottom;
+    if ($('blockBaseHeight')) $<HTMLInputElement>('blockBaseHeight').value = String(state.blockBaseHeightMm);
+    setVal('blockBaseHeightVal', `${state.blockBaseHeightMm.toFixed(1)} mm`);
+    if ($('blockModuleThickness')) $<HTMLInputElement>('blockModuleThickness').value = String(state.blockModuleThicknessMm);
+    setVal('blockModuleThicknessVal', `${state.blockModuleThicknessMm.toFixed(1)} mm`);
+    if ($('blockModuleSideThickness')) $<HTMLInputElement>('blockModuleSideThickness').value = String(state.blockModuleSideThicknessMm);
+    setVal('blockModuleSideThicknessVal', `${state.blockModuleSideThicknessMm.toFixed(2)} mm`);
+    if ($('blockBaseCornerRadius')) $<HTMLInputElement>('blockBaseCornerRadius').value = String(state.blockBaseCornerRadiusMm);
+    setVal('blockBaseCornerRadiusVal', `${state.blockBaseCornerRadiusMm.toFixed(2)} mm`);
+    if ($('blockKeycapHeight')) $<HTMLInputElement>('blockKeycapHeight').value = String(state.blockKeycapHeightMm);
+    setVal('blockKeycapHeightVal', `${state.blockKeycapHeightMm.toFixed(1)} mm`);
+    if ($('blockKeycapThickness')) $<HTMLInputElement>('blockKeycapThickness').value = String(state.blockKeycapThicknessMm);
+    setVal('blockKeycapThicknessVal', `${state.blockKeycapThicknessMm.toFixed(1)} mm`);
+    if ($('blockKeycapCornerRadius')) $<HTMLInputElement>('blockKeycapCornerRadius').value = String(state.blockKeycapCornerRadiusMm);
+    setVal('blockKeycapCornerRadiusVal', `${state.blockKeycapCornerRadiusMm.toFixed(1)} mm`);
+    if ($('hybridImageSize')) $<HTMLInputElement>('hybridImageSize').value = String(state.hybridImageSizeMm);
+    setVal('hybridImageSizeVal', `${state.hybridImageSizeMm.toFixed(0)} mm`);
+    if ($('blockKeycapProfile')) $<HTMLSelectElement>('blockKeycapProfile').value = state.blockKeycapProfile;
+    if ($('blockKeySize')) $<HTMLSelectElement>('blockKeySize').value = String(state.blockKeycapUnit);
 
     // Đồng bộ giá trị slider mở rộng đế
     const expandPercent = (state as any).bottomExpandPercent ?? 22;
@@ -184,10 +209,35 @@ export function createUi(
 
     // Cập nhật Tab Import Mode
     document.querySelectorAll('#importTabs [data-mode]').forEach(b => b.classList.toggle('active', (b as HTMLElement).dataset.mode === state.importMode));
-    if ($('imagePanel')) $('imagePanel')!.hidden = state.importMode !== 'image';
+    if ($('imagePanel')) $('imagePanel')!.hidden = state.importMode !== 'image' && state.importMode !== 'hybrid';
     if ($('svgPanel')) $('svgPanel')!.hidden = state.importMode !== 'svg';
     if ($('iconPanel')) $('iconPanel')!.hidden = state.importMode !== 'icon';
-    if ($('letterPanel')) $('letterPanel')!.hidden = state.importMode !== 'text';
+    if ($('letterPanel')) $('letterPanel')!.hidden = state.importMode !== 'text' && state.importMode !== 'blocks' && state.importMode !== 'hybrid';
+    if ($('textOnlyField')) $('textOnlyField')!.hidden = state.importMode === 'blocks' || state.importMode === 'hybrid';
+    if ($('blocksTextField')) $('blocksTextField')!.hidden = state.importMode !== 'blocks' && state.importMode !== 'hybrid';
+    if ($('blocksChainField')) $('blocksChainField')!.hidden = state.importMode !== 'blocks' && state.importMode !== 'hybrid';
+    if ($('blocksText')) {
+      const blockText = state.blockSlots.map(slot => slot.ch).join('');
+      if (document.activeElement !== $('blocksText')) $<HTMLTextAreaElement>('blocksText').value = blockText;
+    }
+    if ($('blockChips')) {
+      $('blockChips')!.innerHTML = state.blockSlots.map((slot, index) => `<span class="block-chip" data-block-index="${index}">${slot.ch.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`).join('');
+    }
+    if ($('blocksSection')) $('blocksSection')!.hidden = state.importMode !== 'blocks' && state.importMode !== 'hybrid';
+    const isBlocksMode = state.importMode === 'blocks' || state.importMode === 'hybrid';
+    if ($('baseStyleSection')) $('baseStyleSection')!.hidden = isBlocksMode;
+    if ($('sectionSwitch')) $('sectionSwitch')!.hidden = isBlocksMode;
+    for (const id of ['topProfileTabs', 'topthick', 'imgdepth', 'socketTolStepper', 'stemTolStepper']) {
+      const el = document.getElementById(id);
+      const field = el?.closest('.prow-stacked') ?? el?.parentElement;
+      if (field) (field as HTMLElement).style.display = isBlocksMode ? 'none' : '';
+    }
+    document.querySelectorAll('#blockOrient [data-orient]').forEach(b => b.classList.toggle('active', (b as HTMLElement).dataset.orient === state.blockOrientation));
+    document.querySelectorAll('#blockKeycapShape [data-keycap-shape]').forEach(b => b.classList.toggle('active', (b as HTMLElement).dataset.keycapShape === state.blockKeycapShape));
+    document.querySelectorAll('#blockKeycapMount [data-keycap-mount]').forEach(b => b.classList.toggle('active', (b as HTMLElement).dataset.keycapMount === state.blockKeycapMount));
+    if ($('hybridSquareModuleBase')) $<HTMLInputElement>('hybridSquareModuleBase').checked = state.hybridSquareModuleBase;
+    if ($('hybridSquareModuleRow')) ($('hybridSquareModuleRow') as HTMLElement).style.display = state.importMode === 'hybrid' ? '' : 'none';
+    if ($('hybridImageSizeRow')) ($('hybridImageSizeRow') as HTMLElement).style.display = state.importMode === 'hybrid' ? '' : 'none';
 
     // Cập nhật View Tabs
     document.querySelectorAll('#viewTabs button').forEach(b => b.classList.toggle('active', (b as HTMLElement).dataset.view === state.view));
@@ -300,6 +350,6 @@ export function createUi(
     hexRgb,
     showColorPopoverAt,
     addUploadedSvg: (svgText: string, name: string) => addUploadedSvgElement(svgText, name, cb),
-    addFontOption: (font: any) => addFontToGrid(font, cb)
+    addFontOption: (font: any, autoSelect = false) => addFontToGrid(font, cb, autoSelect)
   };
 }

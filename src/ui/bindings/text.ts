@@ -7,9 +7,11 @@ let selectedFontBtn: HTMLElement | null = null;
 
 export function bindTextEvents(cb: UiCallbacks) {
   const letterText = $<HTMLTextAreaElement>('letterText');
+  const blocksText = $<HTMLTextAreaElement>('blocksText');
   const fontUpload = $<HTMLInputElement>('fontUpload');
 
   letterText?.addEventListener('input', () => cb.onTextChange(letterText.value));
+  blocksText?.addEventListener('input', () => cb.onBlockText(blocksText.value));
   
   fontUpload?.addEventListener('change', () => {
     const f = fontUpload.files?.[0];

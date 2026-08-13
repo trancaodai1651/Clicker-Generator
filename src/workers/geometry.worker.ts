@@ -4,6 +4,8 @@ import Module from 'manifold-3d';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
 import { parse3MF } from '../geometry/threemfImport';
 import { buildClicker } from '../geometry/buildClicker';
+import { buildBlocks, prepareBlockAssets, type KeycapAsset, type PreparedBlockAssets } from '../geometry/buildBlocks';
+import { buildHybridClicker } from '../geometry/buildHybridClicker';
 import type { GeometryRequest, GeometryResponse, ClickerPart } from '../types';
 
 type Wasm = Awaited<ReturnType<typeof Module>>;
@@ -11,6 +13,8 @@ type Wasm = Awaited<ReturnType<typeof Module>>;
 let modulePromise: Promise<Wasm> | null = null;
 let socket: any = null; // cached MX socket (negative), in mm
 let stem: any = null; // cached MX stem (positive), in mm
+let blockAssets: PreparedBlockAssets | null = null;
+let keycapAsset: KeycapAsset | null = null;
 
 async function getModule(): Promise<Wasm> {
   if (!modulePromise) {
@@ -53,6 +57,9 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
     if (msg.type === 'init') {
       socket?.delete?.();
       stem?.delete?.();
+      for (const solid of blockAssets?.owned ?? []) solid?.delete?.();
+      blockAssets = null;
+      keycapAsset = null;
       const a = assetToSolid(wasm, msg.socket);
       const b = assetToSolid(wasm, msg.stem);
       
@@ -68,6 +75,23 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
 
       a.solid.delete();
       b.solid.delete();
+
+      if (msg.blockNoSides && msg.blockSouth && msg.blockNorthSouth && msg.blockNorthWest && msg.blockNorthSouthWest && msg.blockAllSides && msg.keycapJson) {
+        blockAssets = prepareBlockAssets(wasm, socket, {
+          noSides: msg.blockNoSides,
+          south: msg.blockSouth,
+          northSouth: msg.blockNorthSouth,
+          northWest: msg.blockNorthWest,
+          northSouthWest: msg.blockNorthSouthWest,
+          allSides: msg.blockAllSides,
+          keycapJson: msg.keycapJson,
+        });
+        keycapAsset = {
+          shell: { positions: msg.keycapJson.positions, indices: msg.keycapJson.indices },
+          stem: msg.keycapJson.stem ?? null,
+          meta: msg.keycapJson.meta,
+        };
+      }
 
       const sw = parse3MF(msg.switch);
       const v = sw.vertProperties;
@@ -126,6 +150,32 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
       }
 
       // Post parts and include any non-fatal build warnings collected in buildClicker
+      post({ type: 'parts', parts, switchPlacements, warnings }, transfer);
+      return;
+    }
+
+    if (msg.type === 'buildBlocks') {
+      if (!blockAssets || !keycapAsset) throw new Error('Block assets not initialized');
+      const { parts, switchPlacements, warnings } = buildBlocks(wasm, blockAssets, keycapAsset, msg.params, socket);
+      const transfer: Transferable[] = [];
+      for (const p of parts as ClickerPart[]) transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
+      post({ type: 'parts', parts, switchPlacements, warnings }, transfer);
+      return;
+    }
+
+    if (msg.type === 'buildHybridClicker') {
+      if (!blockAssets || !keycapAsset) throw new Error('Block assets not initialized');
+      const { parts, switchPlacements, warnings } = buildHybridClicker(
+        wasm,
+        blockAssets,
+        keycapAsset,
+        msg.regions,
+        msg.outline,
+        msg.params,
+        msg.blockParams,
+      );
+      const transfer: Transferable[] = [];
+      for (const p of parts as ClickerPart[]) transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
       post({ type: 'parts', parts, switchPlacements, warnings }, transfer);
       return;
     }

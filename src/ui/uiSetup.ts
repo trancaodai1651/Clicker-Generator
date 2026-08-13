@@ -92,9 +92,9 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
     onKeychainSize: (deltaMm) => { const kc = store.get().keychain; store.set({ keychain: { ...kc, holeDiameterMm: Math.round(Math.max(3.0, Math.min(8.0, kc.holeDiameterMm + deltaMm)) * 10) / 10 } }); debouncedRebuild(); },
     onKeychainOffset: (deltaMm) => { const kc = store.get().keychain; store.set({ keychain: { ...kc, offsetMm: Math.round(Math.max(-15.0, Math.min(15.0, (kc.offsetMm ?? 0) + deltaMm)) * 10) / 10 } }); debouncedRebuild(); },
     
-    onSmoothing: (v) => { store.set({ smoothing: v }); if (store.get().importMode === 'image' && appData.originalImage) debouncedReprocess(); },
-    onRemoveBg: (on) => { store.set({ removeBg: on }); const mode = store.get().importMode; if ((mode === 'image' && appData.originalImage) || (mode === 'svg' && appData.currentSvgText)) reprocess(); },
-    onPhotoFlatten: (on) => { store.set({ photoFlatten: on }); if (store.get().importMode === 'image' && appData.originalImage) debouncedReprocess(); },
+    onSmoothing: (v) => { store.set({ smoothing: v }); if ((store.get().importMode === 'image' || store.get().importMode === 'hybrid') && appData.originalImage) debouncedReprocess(); },
+    onRemoveBg: (on) => { store.set({ removeBg: on }); const mode = store.get().importMode; if (((mode === 'image' || mode === 'hybrid') && appData.originalImage) || (mode === 'svg' && appData.currentSvgText)) reprocess(); },
+    onPhotoFlatten: (on) => { store.set({ photoFlatten: on }); if ((store.get().importMode === 'image' || store.get().importMode === 'hybrid') && appData.originalImage) debouncedReprocess(); },
     onView: (mode) => { store.set({ view: mode }); viewer.setView(mode); },
     onShowSwitch: (on) => { store.set({ showSwitch: on }); viewer.showSwitch(on); },
     onSection: (axis, pos) => viewer.setSection(axis, pos),
@@ -108,13 +108,47 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
     onLoadProject: (file) => loadProject(file, reprocess, rebuild, ui),
     onBodyColor: (hex) => { const idx = appData.latestParts.findIndex((p) => p.name === 'base-body'); if (idx >= 0) applyModelRecolor({ kind: 'body' }, hexToRgb(hex), idx, viewer); else store.set({ bodyColorRgb: hexToRgb(hex) }); },
     
-    onImportMode: (mode) => { const s = store.get(); store.set({ importMode: mode, baseShape: mode === 'text' ? 'outline' : s.baseShape, colorMode: mode !== 'image' ? 'normal' : s.colorMode, imageMargin: mode === 'text' ? 2.5 : 1.2, borderWidth: mode === 'text' ? 3.5 : 2.6 }); reprocess(); },
+    onImportMode: (mode) => { const s = store.get(); store.set({ importMode: mode, view: mode === 'blocks' || mode === 'hybrid' ? 'assembled' : s.view, baseShape: mode === 'text' || mode === 'blocks' || mode === 'hybrid' ? 'outline' : s.baseShape, colorMode: mode !== 'image' && mode !== 'hybrid' ? 'normal' : s.colorMode, imageMargin: mode === 'text' || mode === 'blocks' ? 2.5 : 1.2, borderWidth: mode === 'text' || mode === 'blocks' ? 3.5 : 2.6 }); reprocess(); },
     onSvgUpload: async (file) => { try { store.set({ building: true, status: 'Reading SVG…' }); const svgText = await file.text(); ui.addUploadedSvg(svgText, file.name.replace(/\.svg$/i, '')); store.set({ building: false }); } catch (err) { store.set({ building: false, status: 'Error: ' + err }); } },
     onSelectSvg: (svgText, name) => { appData.currentSvgText = svgText; appData.currentSvgName = name; store.set({ status: `Selected SVG: ${name}` }); },
     onSelectIcon: (svgText, name) => { appData.currentIconText = svgText; appData.currentIconName = name; store.set({ currentIconName: name, status: `Selected icon: ${name}` }); },
     onTextChange: (text) => { appData.currentText = text; store.set({ status: 'Text updated.' }); },
-    onFontSelect: (fontId) => { appData.currentFontId = fontId; store.set({ status: 'Font changed.' }); },
-    onImportFont: async (file) => { try { store.set({ building: true }); const font = await importFontFile(file); ui.addFontOption(font); appData.currentFontId = font.id; store.set({ building: false, status: `Font ${font.name} imported!` }); } catch (err) { store.set({ building: false, status: 'Error: ' + err }); } },
+    onBlockText: (text) => {
+      const chars = Array.from(text.replace(/\s+/g, '')).slice(0, 12);
+      store.set({ blockSlots: (chars.length ? chars : ['N', 'a', 'm', 'e']).map(ch => ({ kind: 'char' as const, ch })) });
+      reprocess();
+    },
+    onBlockOrientation: (orientation) => { store.set({ blockOrientation: orientation }); debouncedRebuild(); },
+    onLegendScale: (scale) => { store.set({ legendScale: Math.max(0.5, Math.min(1.4, scale)) }); debouncedRebuild(); },
+    onLegendBold: (bold) => { store.set({ legendBold: Math.max(-0.3, Math.min(0.8, bold)) }); debouncedRebuild(); },
+    onBlockKeycapGap: (value) => { store.set({ blockKeycapGapMm: Math.max(0, Math.min(3, value)) }); debouncedRebuild(); },
+    onBlockFlatBottom: (value) => { store.set({ blockFlatBottom: value }); debouncedRebuild(); },
+    onBlockBaseHeight: (value) => { store.set({ blockBaseHeightMm: Math.max(8, Math.min(30, value)) }); debouncedRebuild(); },
+    onBlockModuleThickness: (value) => { store.set({ blockModuleThicknessMm: Math.max(8, Math.min(30, value)) }); debouncedRebuild(); },
+    onBlockModuleSideThickness: (value) => { store.set({ blockModuleSideThicknessMm: Math.max(0, Math.min(33, value)) }); debouncedRebuild(); },
+    onBlockBaseCornerRadius: (value) => { store.set({ blockBaseCornerRadiusMm: Math.max(0.5, Math.min(8, value)) }); debouncedRebuild(); },
+    onBlockKeycapHeight: (value) => { store.set({ blockKeycapHeightMm: Math.max(6, Math.min(18, value)) }); debouncedRebuild(); },
+    onBlockKeycapThickness: (value) => { store.set({ blockKeycapThicknessMm: Math.max(0.8, Math.min(4, value)) }); debouncedRebuild(); },
+    onBlockKeycapCornerRadius: (value) => { store.set({ blockKeycapCornerRadiusMm: Math.max(0.8, Math.min(7, value)) }); debouncedRebuild(); },
+    onBlockKeycapShape: (shape) => { store.set({ blockKeycapShape: shape }); debouncedRebuild(); },
+    onBlockKeycapMount: (mount) => { store.set({ blockKeycapMount: mount }); debouncedRebuild(); },
+    onBlockKeycapProfile: (profile) => { store.set({ blockKeycapProfile: profile }); debouncedRebuild(); },
+    onBlockKeySize: (unit) => { store.set({ blockKeycapUnit: Math.max(1, Math.min(6.5, unit)) }); debouncedRebuild(); },
+    onHybridSquareModuleBase: (on) => { store.set({ hybridSquareModuleBase: on }); debouncedRebuild(); },
+    onHybridImageSize: (sizeMm) => { store.set({ hybridImageSizeMm: Math.max(20, Math.min(100, sizeMm)) }); debouncedRebuild(); },
+    onFontSelect: (fontId) => { appData.currentFontId = fontId; if (store.get().importMode === 'blocks' || store.get().importMode === 'hybrid') reprocess(); else store.set({ status: 'Font changed.' }); },
+    onImportFont: async (file) => {
+      try {
+        store.set({ building: true });
+        const font = await importFontFile(file);
+        ui.addFontOption(font, store.get().importMode === 'blocks' || store.get().importMode === 'hybrid');
+        appData.currentFontId = font.id;
+        store.set({ building: false, status: `Font ${font.name} imported!` });
+        if (store.get().importMode === 'blocks' || store.get().importMode === 'hybrid') reprocess();
+      } catch (err) {
+        store.set({ building: false, status: 'Error: ' + err });
+      }
+    },
     
     onThemeChange: (theme) => { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('clicker-theme', theme); viewer.setTheme(theme); },
     onGenerate: () => reprocess(),

@@ -405,12 +405,3 @@ export function buildClicker(
   const finalWarnings = warnings.concat(pinched ? ['Switches pulled together to fit the cap.'] : []);
   return { parts, switchPlacements: applied, warnings: finalWarnings };
 }
-
-
-
-
-
-
-
-
-

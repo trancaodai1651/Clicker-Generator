@@ -31,65 +31,6 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 17.5px; }
 body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-/* Top bar: GitHub / Star on the left, donation links on the right */
-#topbar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--line);
-}
-.topbar-group { display: flex; align-items: center; gap: 8px; }
-.donate-label { color: var(--muted); font-size: 14px; margin-right: 2px; }
-.topbar-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 12px;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  transition: border-color 0.12s, color 0.12s, background 0.12s;
-}
-.topbar-btn svg { flex: 0 0 auto; }
-.topbar-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-/* Commercial license + Ko-fi: red, emphasized (same size as the others) */
-.topbar-license,
-.donate-kofi {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: #ffffff;
-  font-weight: 700;
-}
-.topbar-license:hover,
-.donate-kofi:hover {
-  background: #dc2626;
-  border-color: #dc2626;
-  color: #ffffff;
-}
-
-/* MakerWorld: green */
-.donate-makerworld {
-  background: #16a34a;
-  border-color: #16a34a;
-  color: #ffffff;
-  font-weight: 600;
-}
-.donate-makerworld:hover {
-  background: #15803d;
-  border-color: #15803d;
-  color: #ffffff;
-}
-
 #layout {
   display: grid;
   grid-template-columns: 22vw 1fr 24.2vw;
@@ -1156,6 +1097,37 @@ body.tutorial-active.focus-center #viewport {
   display: none;
 }
 
+/* The Blocks mode swaps the normal text editor for its own single-line input.
+   Keep this explicit because the sidebar also contains legacy field rules. */
+#textOnlyField[hidden],
+#blocksTextField[hidden],
+#blocksChainField[hidden] {
+  display: none !important;
+}
+
+.block-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+}
+
+.block-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
 .hint-text {
   font-size: 13.5px;
   color: var(--muted);
@@ -2048,11 +2020,11 @@ button.fil-chip:active {
    WORKSPACE & DASHBOARD LAYOUT
 ========================================= */
 
-/* 1. Khung chứa tổng toàn bộ ứng dụng (dưới Topbar) */
+/* 1. Khung chứa tổng toàn bộ ứng dụng */
 #app-wrapper {
   position: relative;
   width: 100vw;
-  height: calc(100vh - 40px); /* Đảm bảo trừ đúng độ cao thanh Topbar */
+  height: 100vh;
   overflow: hidden;
   background-color: var(--bg, #0f172a);
 }
@@ -2170,12 +2142,249 @@ button.fil-chip:active {
   line-height: 1.5;
 }
 
-
-  color: var(--muted);
-}
-
 .drag-handle {
   color: var(--muted);
   font-size: 16px;
   padding: 4px;
+}
+
+/* Blocks Builder */
+#blocks-screen {
+  position: absolute;
+  inset: 0;
+  background: #111318;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#blocks-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr) 370px;
+  gap: 18px;
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+.blocks-stage {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  min-width: 0;
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#blocks-app {
+  width: 100%;
+  height: 100%;
+}
+
+.blocks-shell {
+  height: 100%;
+  padding: 0;
+  color: var(--text);
+}
+
+.blocks-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.blocks-header h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.blocks-header p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.35;
+  font-size: 15px;
+}
+
+.blocks-panel {
+  background: #1a1d26;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.28);
+}
+
+.blocks-preview-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: #242936;
+}
+
+.blocks-preview-button {
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 8px;
+  color: #b6c0d0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.blocks-preview-button.active {
+  color: #0e1520;
+  background: #5f9cff;
+}
+
+.blocks-switch-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  color: #cbd3df;
+  font-size: 13px;
+}
+
+.blocks-switch-toggle input {
+  width: 38px;
+  height: 20px;
+  accent-color: #42c995;
+}
+
+.blocks-viewport-shell {
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #171923;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02), 0 20px 50px rgba(0,0,0,0.34);
+}
+
+.blocks-viewport {
+  width: 100%;
+  height: 100%;
+}
+
+.blocks-sidebar {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.blocks-sidebar-left .blocks-panel {
+  height: 100%;
+}
+
+.blocks-sidebar .blocks-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.blocks-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 8px;
+  color: #aab2c0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.blocks-export-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.blocks-export-row button {
+  min-width: 0;
+  padding: 10px 6px;
+  font-size: 12px;
+}
+
+#blocks-layout .field {
+  margin-bottom: 8px;
+}
+
+#blocks-layout .field label {
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #9ba3b2;
+}
+
+#blocks-layout .field input,
+#blocks-layout .field select {
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #232736;
+  border-color: rgba(255,255,255,0.08);
+  color: #eff2f7;
+}
+
+#blocks-layout .secondary {
+  width: auto;
+  align-self: flex-start;
+  padding: 8px 14px;
+  font-size: 14px;
+  background: transparent;
+  color: #dbe1ea;
+  border-color: rgba(255,255,255,0.12);
+}
+
+.blocks-slot-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.blocks-slot-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px 36px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #202432;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.slot-pill, .slot-name {
+  color: #eef2f7;
+}
+
+.slot-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.slot-name {
+  font-size: 14px;
+  color: #c9d0db;
+}
+
+.slot-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.16);
+}
+
+.slot-swatch.white {
+  background: #f7f7f5;
 }
