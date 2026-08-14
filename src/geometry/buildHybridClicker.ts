@@ -71,13 +71,13 @@ function taperedImageTransition(
   moduleBottom: number,
   baseJoin: number,
 ): any {
-  // Keep the neck inside the module outline. Adding a fixed amount here made
-  // the transition wider than the first module and created sharp shoulders.
-  const bodyHalf = Math.max(2.5, (vertical ? moduleWidth : moduleDepth) / 2 - 0.45);
+  // Match the neck to the module's actual outside edge. The previous inset
+  // made a visible step between the neck and the first module.
+  const bodyHalf = Math.max(2.5, (vertical ? moduleWidth : moduleDepth) / 2 - 0.1);
   // Scale the image-side inset with the badge, while keeping it bounded so a
   // very large image does not turn the neck into a tall, pointed wedge.
   const imageInset = Math.max(1.5, Math.min(5.5, (vertical ? badgeDepth : badgeWidth) * 0.12));
-  const imageHalf = Math.min(bodyHalf * 0.74, 8.0);
+  const imageHalf = Math.min(bodyHalf * 0.92, 10.5);
   let points: [number, number][];
   const smoothStep = (t: number) => t * t * (3 - 2 * t);
 
@@ -167,6 +167,12 @@ export function buildHybridClicker(
 
   const moduleWidth = moduleBox.max[0] - moduleBox.min[0];
   const moduleDepth = moduleBox.max[1] - moduleBox.min[1];
+  const sideWall = Math.max(0, Math.min(33, blockParams.moduleSideThicknessMm ?? 0));
+  // Side-wall thickness grows outward on the two long sides. Use that outer
+  // size for positioning as well as for the neck, otherwise the first block
+  // can overlap the image even when its center-to-center gap is correct.
+  const outerModuleWidth = moduleWidth + (blockParams.vertical ? sideWall * 2 : 0);
+  const outerModuleDepth = moduleDepth + (blockParams.vertical ? 0 : sideWall * 2);
   const moduleHeight = (moduleBox.max[2] - moduleBox.min[2]) * Math.max(
     0.25,
     Math.min(4, (blockParams.baseHeightMm ?? 14) / 14),
@@ -259,11 +265,11 @@ export function buildHybridClicker(
   let shiftY = 0;
   if (blockParams.vertical) {
     const firstY = firstOffset;
-    const desiredFirstY = -(referenceBadgeDepth / 2 + moduleDepth / 2) - desiredGap;
+    const desiredFirstY = -(referenceBadgeDepth / 2 + outerModuleDepth / 2) - desiredGap;
     shiftY = desiredFirstY - firstY;
   } else {
     const firstX = -firstOffset;
-    const desiredFirstX = referenceBadgeWidth / 2 + moduleWidth / 2 + desiredGap;
+    const desiredFirstX = referenceBadgeWidth / 2 + outerModuleWidth / 2 + desiredGap;
     shiftX = desiredFirstX - firstX;
   }
 
@@ -288,16 +294,16 @@ export function buildHybridClicker(
     // circular image badge into the straight-sided base.
     const transition = taperedImageTransition(
       ctx,
-      moduleWidth,
-      moduleDepth,
+      outerModuleWidth,
+      outerModuleDepth,
       badgeWidth,
       badgeDepth,
       blockParams.vertical,
       moduleHeight,
       moduleBottom,
       blockParams.vertical
-        ? Math.max(...shiftedPlacements.map((placement) => placement.y)) + moduleDepth / 2 + 0.8
-        : Math.min(...shiftedPlacements.map((placement) => placement.x)) - moduleWidth / 2 - 0.8,
+        ? Math.max(...shiftedPlacements.map((placement) => placement.y)) + outerModuleDepth / 2 + 0.8
+        : Math.min(...shiftedPlacements.map((placement) => placement.x)) - outerModuleWidth / 2 - 0.8,
     );
     // The official block module remains a separate connector-aware solid.
     // Only the neck is unioned into the image badge, so no module socket or
@@ -306,11 +312,11 @@ export function buildHybridClicker(
   } else {
     const firstCenterX = -firstOffset + shiftX;
     const firstCenterY = firstOffset + shiftY;
-    const neckWidth = Math.max(5, Math.min(moduleWidth * 0.78, badgeWidth * 0.72));
-    const neckDepth = Math.max(5, Math.min(moduleDepth * 0.78, badgeDepth * 0.72));
+    const neckWidth = Math.max(5, Math.min(outerModuleWidth * 0.92, badgeWidth * 0.82));
+    const neckDepth = Math.max(5, Math.min(outerModuleDepth * 0.92, badgeDepth * 0.82));
     let bridge: any;
     if (blockParams.vertical) {
-      const yMin = firstCenterY + moduleDepth / 2 - 0.8;
+      const yMin = firstCenterY + outerModuleDepth / 2 - 0.8;
       const yMax = -badgeDepth / 2 + 1.2;
       const span = Math.max(3, yMax - yMin);
       const bridgeProfile = ctx.track(roundedRect(ctx, neckWidth, span, Math.min(2.4, neckWidth / 4)));
@@ -318,7 +324,7 @@ export function buildHybridClicker(
         .translate([0, (yMin + yMax) / 2, moduleBottom]));
     } else {
       const xMin = badgeWidth / 2 - 1.2;
-      const xMax = firstCenterX - moduleWidth / 2 + 0.8;
+      const xMax = firstCenterX - outerModuleWidth / 2 + 0.8;
       const span = Math.max(3, xMax - xMin);
       const bridgeProfile = ctx.track(roundedRect(ctx, span, neckDepth, Math.min(2.4, neckDepth / 4)));
       bridge = ctx.track(wasm.Manifold.extrude(bridgeProfile, moduleHeight)
