@@ -122,7 +122,17 @@ function taperedImageTransition(
     }
   }
 
-  const profile = ctx.track(new ctx.wasm.CrossSection([points], 'NonZero'));
+  let profile = ctx.track(new ctx.wasm.CrossSection([points], 'NonZero'));
+  // Round the two profile transitions so the collar blends into the badge
+  // and the module instead of ending in triangular points. The paired offset
+  // keeps the nominal footprint while smoothing only the sharp corners.
+  try {
+    const soften = Math.max(0.45, Math.min(1.35, bodyHalf * 0.12));
+    profile = ctx.track(profile.offset(soften, 'Round', 2, 32).offset(-soften, 'Round', 2, 32));
+  } catch {
+    // Keep the valid raw profile if a very small custom module cannot be
+    // offset safely.
+  }
   const solid = ctx.track(ctx.wasm.Manifold.extrude(profile, Math.max(0.2, moduleHeight))
     .translate([0, 0, moduleBottom]));
   return { profile, solid };
