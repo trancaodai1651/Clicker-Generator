@@ -71,16 +71,18 @@ function taperedImageTransition(
   moduleBottom: number,
   baseJoin: number,
 ): any {
-  const bodyHalf = (vertical ? moduleWidth : moduleDepth) / 2 + 2.2;
-  // Keep the neck fixed in the physical keychain dimensions. Previously this
-  // was derived from badgeWidth/badgeDepth, so changing image size stretched
-  // the neck and produced sharp side shoulders.
-  const imageHalf = Math.min(bodyHalf * 0.7, 6.2);
+  // Keep the neck inside the module outline. Adding a fixed amount here made
+  // the transition wider than the first module and created sharp shoulders.
+  const bodyHalf = Math.max(2.5, (vertical ? moduleWidth : moduleDepth) / 2 - 0.45);
+  // Scale the image-side inset with the badge, while keeping it bounded so a
+  // very large image does not turn the neck into a tall, pointed wedge.
+  const imageInset = Math.max(1.5, Math.min(5.5, (vertical ? badgeDepth : badgeWidth) * 0.12));
+  const imageHalf = Math.min(bodyHalf * 0.74, 8.0);
   let points: [number, number][];
   const smoothStep = (t: number) => t * t * (3 - 2 * t);
 
   if (vertical) {
-    const imageY = -badgeDepth / 2 + 3.5;
+    const imageY = -badgeDepth / 2 + imageInset;
     // The base begins below the image's tangent. Let the transition overlap
     // the base by 1.5 mm so the union is unambiguous and the outline is not a
     // rectangle abruptly touching the badge.
@@ -102,7 +104,7 @@ function taperedImageTransition(
       points.push([half, y]);
     }
   } else {
-    const imageX = badgeWidth / 2 - 3.5;
+    const imageX = badgeWidth / 2 - imageInset;
     const baseX = baseJoin + 1.5;
     const samples = 18;
     points = [];
@@ -249,7 +251,10 @@ export function buildHybridClicker(
   const firstOffset = ((count - 1) / 2) * pitch;
   // Deliberate overlap: the connector neck below hides the seam and makes the
   // image badge and the first block print as one continuous body.
-  const desiredGap = -1.5;
+  // Leave a small physical gap between the badge and first module. The neck
+  // overlaps each side internally, so the final union is solid without the
+  // image face visibly cutting into the first keycap.
+  const desiredGap = 0.8;
   let shiftX = 0;
   let shiftY = 0;
   if (blockParams.vertical) {
