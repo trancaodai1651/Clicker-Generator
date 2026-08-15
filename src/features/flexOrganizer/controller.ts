@@ -66,14 +66,31 @@ function cleanName(value: string): string {
 }
 
 function meshGeometry(payload: MeshPayload): THREE.BufferGeometry {
+  if (payload.positions.length < 9 || payload.indices.length < 3) {
+    throw new Error('Worker returned an empty organizer mesh');
+  }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(payload.positions, 3));
   geometry.setIndex(new THREE.BufferAttribute(payload.indices, 1));
-  const creased = toCreasedNormals(geometry, (35 * Math.PI) / 180);
-  geometry.dispose();
-  creased.computeBoundingBox();
-  creased.computeBoundingSphere();
-  return creased;
+  try {
+    const creased = toCreasedNormals(geometry, (35 * Math.PI) / 180);
+    geometry.dispose();
+    creased.computeBoundingBox();
+    creased.computeBoundingSphere();
+    return creased;
+  } catch (error) {
+    // A valid CSG mesh should still be renderable if the optional crease pass
+    // cannot process it. Keep the original indexed geometry as a safe fallback.
+    try {
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      return geometry;
+    } catch {
+      geometry.dispose();
+      throw error;
+    }
+  }
 }
 
 function disposeMaterial(material: THREE.Material | THREE.Material[]) {
@@ -463,12 +480,19 @@ class FlexOrganizer implements OrganizerController {
       }
       return;
     }
+    try {
+      this.renderMeshes(result);
+    } catch (error) {
+      // Do not replace a working model with a blank scene when a new toggle
+      // produces a mesh that the viewer cannot process.
+      this.renderStatus('error', error instanceof Error ? error.message : String(error));
+      return;
+    }
     this.latestResult = result;
     this.state.hasMesh = result.mesh.positions.length > 0;
     this.state.hasLabelMesh = Boolean(result.label?.plate.positions.length);
     this.state.info = result.info;
     this.state.warnings = result.warnings;
-    this.renderMeshes(result);
     this.updateInfo(result.info);
     this.refreshExportButtons();
     this.renderStatus('idle');
@@ -488,18 +512,24 @@ class FlexOrganizer implements OrganizerController {
 
   private renderMeshes(result: BuildResult) {
     if (!this.root) return;
-    this.clearRoot();
-    const baseMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.params.color), roughness: 0.42, metalness: 0.02, side: THREE.DoubleSide });
-    const base = new THREE.Mesh(meshGeometry(result.mesh), baseMaterial);
-    this.root.add(base);
-    if (result.label) {
-      const plateMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.label.plateColor), roughness: 0.35, side: THREE.DoubleSide });
-      this.root.add(new THREE.Mesh(meshGeometry(result.label.plate), plateMaterial));
-      if (result.label.text) {
-        const textMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.label.textColor), roughness: 0.3, side: THREE.DoubleSide });
-        this.root.add(new THREE.Mesh(meshGeometry(result.label.text), textMaterial));
+    const nextMeshes: THREE.Mesh[] = [];
+    try {
+      const baseMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.params.color), roughness: 0.42, metalness: 0.02, side: THREE.DoubleSide });
+      nextMeshes.push(new THREE.Mesh(meshGeometry(result.mesh), baseMaterial));
+      if (result.label) {
+        const plateMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.label.plateColor), roughness: 0.35, side: THREE.DoubleSide });
+        nextMeshes.push(new THREE.Mesh(meshGeometry(result.label.plate), plateMaterial));
+        if (result.label.text) {
+          const textMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.label.textColor), roughness: 0.3, side: THREE.DoubleSide });
+          nextMeshes.push(new THREE.Mesh(meshGeometry(result.label.text), textMaterial));
+        }
       }
+    } catch (error) {
+      for (const mesh of nextMeshes) { mesh.geometry.dispose(); disposeMaterial(mesh.material); }
+      throw error;
     }
+    this.clearRoot();
+    nextMeshes.forEach((mesh) => this.root?.add(mesh));
     this.frameModel();
   }
 
