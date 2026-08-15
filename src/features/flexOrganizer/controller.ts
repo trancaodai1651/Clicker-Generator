@@ -195,6 +195,7 @@ class FlexOrganizer implements OrganizerController {
   private root: THREE.Group | null = null;
   private grid: THREE.GridHelper | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private resizeHandler = () => this.resizeViewer();
   private frame = 0;
   private viewport: HTMLElement | null = null;
   private debounceTimer = 0;
@@ -263,8 +264,15 @@ class FlexOrganizer implements OrganizerController {
     this.root = root;
     this.grid = grid;
     this.updateThemeColors();
-    this.resizeObserver = new ResizeObserver(() => this.resizeViewer());
+    this.resizeObserver = new ResizeObserver(this.resizeHandler);
     this.resizeObserver.observe(viewport);
+    // ResizeObserver is not delivered consistently during browser zoom,
+    // device emulation, and some dock/undock transitions. Three.js writes an
+    // inline canvas size, so also listen to the viewport resize event or the
+    // canvas can remain stuck at its initial dimensions in the top-left.
+    window.addEventListener('resize', this.resizeHandler, { passive: true });
+    window.visualViewport?.addEventListener('resize', this.resizeHandler, { passive: true });
+    this.resizeHandler();
     const render = () => {
       this.frame = window.requestAnimationFrame(render);
       controls.update();
@@ -585,6 +593,8 @@ class FlexOrganizer implements OrganizerController {
     this.requestId++;
     this.worker?.terminate();
     this.resizeObserver?.disconnect();
+    window.removeEventListener('resize', this.resizeHandler);
+    window.visualViewport?.removeEventListener('resize', this.resizeHandler);
     this.controls?.dispose();
     this.clearRoot();
     this.renderer?.dispose();
