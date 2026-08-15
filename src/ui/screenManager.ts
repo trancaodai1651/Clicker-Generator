@@ -43,6 +43,10 @@ export function setupScreens() {
     console.error("🚨 LỖI: Không tìm thấy nút có id='btn-open-clicker'");
   }
 
+  if (document.documentElement.dataset.embed === 'formaforge') {
+    requestAnimationFrame(() => openScreen(toolScreen));
+  }
+
   // Trả về các đối tượng để các Tool sử dụng
   return {
     toolScreen,
