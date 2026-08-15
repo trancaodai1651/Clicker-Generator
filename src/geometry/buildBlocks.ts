@@ -52,7 +52,7 @@ function area(ring: Ring): number {
   return Math.abs(value / 2);
 }
 
-function bounds(rings: Ring[]) {
+export function bounds(rings: Ring[]) {
   let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
   for (const ring of rings) for (const [x, y] of ring) {
     minX = Math.min(minX, x); minY = Math.min(minY, y);
@@ -181,7 +181,7 @@ export function prepareBlockAssets(wasm: any, socket: any, input: BlockAssetBuff
   return { byMask, pitch, pitchMax, owned };
 }
 
-function fittedGlyph(
+export function fittedGlyph(
   ctx: BuildContext,
   glyph: BlockGlyph,
   scale: number,
@@ -201,7 +201,7 @@ function fittedGlyph(
   return section;
 }
 
-function makeKeycap(
+export function makeKeycap(
   ctx: BuildContext,
   asset: KeycapAsset,
   stemTolerance: number,
@@ -487,7 +487,7 @@ function makeFlatFloor(
   return ctx.track(ctx.wasm.Manifold.extrude(profile, 1.6).translate([centerX, centerY, floorZ]));
 }
 
-function toPart(solid: any, offset: [number, number], kind: 'cap' | 'body', group: PartGroup, colorRgb: RGB, name: string): ClickerPart {
+export function toPart(solid: any, offset: [number, number], kind: 'cap' | 'body', group: PartGroup, colorRgb: RGB, name: string): ClickerPart {
   const mesh = solid.getMesh();
   const vertices = new Float32Array(mesh.vertProperties);
   for (let i = 0; i < vertices.length; i += mesh.numProp) {
@@ -531,7 +531,7 @@ function buildBlocksLegacy(
   const columns = orientation === 'vertical' ? 1 : Math.max(1, params.glyphs.length);
   const filled = params.glyphs
     .map((glyph, index) => ({ glyph, index, row: Math.floor(index / columns), col: index % columns }))
-    .filter(({ glyph }) => glyph.rings.some((ring) => ring.length >= 3));
+    .filter(({ glyph }) => glyph.blank || glyph.rings.some((ring) => ring.length >= 3));
   if (!filled.length) return { parts, switchPlacements: placements, warnings: ['Add a letter or a symbol to build blocks.'] };
 
   const occupied = new Set(filled.map(({ row, col }) => `${row},${col}`));
@@ -668,8 +668,9 @@ function buildBlocksLegacy(
   const capOffset = baseTop - capBox.min[2] + Math.max(0, params.keycapGapMm ?? 0);
   const stemTop = capHeight + capOffset;
   const topExtent = (keycap.meta.topExtent?.[0] ?? 15.2) * Math.max(1, Math.min(6.5, params.keycapUnit ?? 1));
-  const maxGlyphHeight = Math.max(...filled.map(({ glyph }) => bounds(glyph.rings).h), 1e-6);
-  const maxGlyphWidth = Math.max(...filled.map(({ glyph }) => bounds(glyph.rings).w), 1e-6);
+  const drawable = filled.filter(({ glyph }) => !glyph.blank && glyph.rings.length > 0);
+  const maxGlyphHeight = Math.max(...drawable.map(({ glyph }) => bounds(glyph.rings).h), 1e-6);
+  const maxGlyphWidth = Math.max(...drawable.map(({ glyph }) => bounds(glyph.rings).w), 1e-6);
   const glyphScale = (Math.max(6, topExtent - 4.2) / Math.max(maxGlyphHeight, maxGlyphWidth))
     * Math.min(1.6, Math.max(0.4, params.fontSize / 15));
   const capCache = new Map<number, any>();
@@ -700,7 +701,14 @@ function buildBlocksLegacy(
         warnings.push(`Letter ${entry.index + 1} could not be engraved.`);
       }
     }
-    parts.push(toPart(top, position, 'cap', 'top', params.capColorRgb ?? params.bodyColorRgb ?? DEFAULT_BODY, `cap-${entry.index}`));
+    parts.push(toPart(
+      top,
+      position,
+      'cap',
+      'top',
+      params.capColorByIndex?.[entry.index] ?? params.capColorRgb ?? params.bodyColorRgb ?? DEFAULT_BODY,
+      `cap-${entry.index}`,
+    ));
     if (letter) {
       parts.push(toPart(letter, position, 'cap', 'top', entry.glyph.filamentRgb ?? DEFAULT_LETTER, entry.glyph.partName ?? `top-color-${entry.index}-0`));
     }
@@ -737,7 +745,7 @@ export function buildBlocks(
   const columns = params.vertical ? 1 : Math.max(1, params.glyphs.length);
   const filled = params.glyphs
     .map((glyph, index) => ({ glyph, index, row: Math.floor(index / columns), col: index % columns }))
-    .filter(({ glyph }) => glyph.rings.some((ring) => ring.length >= 3));
+    .filter(({ glyph }) => glyph.blank || glyph.rings.some((ring) => ring.length >= 3));
 
   if (!filled.length) {
     return { parts, switchPlacements, warnings: ['Add a letter or a symbol to build blocks.'] };
@@ -850,8 +858,9 @@ export function buildBlocks(
   };
 
   const topExtent = keycap.meta.topExtent?.[0] ?? 15.2;
-  const maxGlyphHeight = Math.max(...filled.map(({ glyph }) => bounds(glyph.rings).h), 1e-6);
-  const maxGlyphWidth = Math.max(...filled.map(({ glyph }) => bounds(glyph.rings).w), 1e-6);
+  const drawable = filled.filter(({ glyph }) => !glyph.blank && glyph.rings.length > 0);
+  const maxGlyphHeight = Math.max(...drawable.map(({ glyph }) => bounds(glyph.rings).h), 1e-6);
+  const maxGlyphWidth = Math.max(...drawable.map(({ glyph }) => bounds(glyph.rings).w), 1e-6);
   const glyphScale = (Math.max(6, topExtent - 4.2) / Math.max(maxGlyphHeight, maxGlyphWidth))
     * Math.min(1.6, Math.max(0.4, params.fontSize / 15));
   const bold = Math.max(-0.35, Math.min(0.9, params.legendBold ?? 0));
@@ -894,7 +903,14 @@ export function buildBlocks(
       }
     }
 
-    parts.push(toPart(capPart, position, 'cap', 'top', params.capColorRgb ?? bodyColor, `cap-${index}`));
+    parts.push(toPart(
+      capPart,
+      position,
+      'cap',
+      'top',
+      params.capColorByIndex?.[index] ?? params.capColorRgb ?? bodyColor,
+      `cap-${index}`,
+    ));
     if (legend) {
       const orientedLegend = capRotation
         ? ctx.track(legend.rotate([0, 0, capRotation]))

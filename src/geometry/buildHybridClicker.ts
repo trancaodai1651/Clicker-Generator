@@ -53,6 +53,56 @@ function solidFromPart(wasm: any, part: ClickerPart): any {
   return wasm.Manifold.ofMesh(mesh);
 }
 
+/**
+ * Build the image badge as a real top profile instead of a second flat slab.
+ * The silhouette remains driven by the imported image; only the outside wall
+ * tapers toward the printable top face.
+ */
+function buildImageProfile(
+  ctx: BuildContext,
+  section: any,
+  flatHeight: number,
+  profileHeight: number,
+  z: number,
+  profile: 'flat' | 'dome' | 'cone',
+): { solid: any; topScale: number } {
+  if (profile === 'flat' || profileHeight <= 0.01) {
+    return {
+      solid: ctx.track(ctx.wasm.Manifold.extrude(section, Math.max(0.2, flatHeight)).translate([0, 0, z])),
+      topScale: 1,
+    };
+  }
+
+  const bounds = section.bounds();
+  const cx = (bounds.min[0] + bounds.max[0]) / 2;
+  const cy = (bounds.min[1] + bounds.max[1]) / 2;
+  const centered = ctx.track(section.translate([-cx, -cy]));
+  const layers = Math.max(12, Math.min(28, Math.ceil(profileHeight * 4)));
+  const topScale = profile === 'cone' ? 0.84 : 0.9;
+  const totalHeight = Math.max(0.2, flatHeight + profileHeight);
+  const scaleAt = (height: number) => {
+    const t = Math.max(0, Math.min(1, (height - flatHeight) / Math.max(0.001, profileHeight)));
+    if (height <= flatHeight) return 1;
+    if (profile === 'cone') return 1 - (1 - topScale) * Math.pow(t, 1.08);
+    const dome = Math.sqrt(Math.max(0, 1 - t * t));
+    return topScale + (1 - topScale) * dome;
+  };
+
+  let solid: any = null;
+  for (let i = 0; i < layers; i++) {
+    const h0 = totalHeight * i / layers;
+    const h1 = totalHeight * (i + 1) / layers;
+    const s0 = scaleAt(h0);
+    const s1 = scaleAt(h1);
+    const base = Math.abs(s0 - 1) < 0.0001 ? centered : ctx.track(centered.scale([s0, s0]));
+    const ratio = s1 / Math.max(0.001, s0);
+    const layer = ctx.track(base.extrude(Math.max(0.001, h1 - h0), 0, 0, [ratio, ratio])
+      .translate([cx, cy, z + h0]));
+    solid = solid ? ctx.track(solid.add(layer)) : layer;
+  }
+  return { solid: solid ?? ctx.track(ctx.wasm.Manifold.extrude(section, flatHeight).translate([0, 0, z])), topScale };
+}
+
 function shiftPart(part: ClickerPart, dx: number, dy: number) {
   for (let i = 0; i < part.vertProperties.length; i += part.numProp) {
     part.vertProperties[i] += dx;
@@ -74,10 +124,17 @@ function taperedImageTransition(
   // Match the neck to the module's actual outside edge. The previous inset
   // made a visible step between the neck and the first module.
   const bodyHalf = Math.max(2.5, (vertical ? moduleWidth : moduleDepth) / 2 - 0.1);
-  // Scale the image-side inset with the badge, while keeping it bounded so a
-  // very large image does not turn the neck into a tall, pointed wedge.
-  const imageInset = Math.max(1.5, Math.min(5.5, (vertical ? badgeDepth : badgeWidth) * 0.12));
-  const imageHalf = Math.min(bodyHalf * 0.92, 10.5);
+  // Scale the image-side inset with the edge that the neck actually touches.
+  // The old code used the badge width for a horizontal row even when the
+  // imported image was shallow, producing a neck that met the image only at a
+  // tiny point. The collar now follows the image's local depth/width and
+  // always overlaps the image by a real printable area.
+  const imageSpan = vertical ? badgeWidth : badgeDepth;
+  const imageInset = Math.max(1.2, Math.min(5.5, imageSpan * 0.12));
+  const imageHalf = Math.min(
+    bodyHalf * 0.96,
+    Math.max(3.2, imageSpan * 0.5 + 1.2),
+  );
   let points: [number, number][];
   const smoothStep = (t: number) => t * t * (3 - 2 * t);
 
@@ -86,7 +143,7 @@ function taperedImageTransition(
     // The base begins below the image's tangent. Let the transition overlap
     // the base by 1.5 mm so the union is unambiguous and the outline is not a
     // rectangle abruptly touching the badge.
-    const baseY = baseJoin - 1.5;
+    const baseY = baseJoin - 0.75;
     const samples = 18;
     points = [];
     // Curved side walls (rather than straight diagonal edges) create the
@@ -105,7 +162,7 @@ function taperedImageTransition(
     }
   } else {
     const imageX = badgeWidth / 2 - imageInset;
-    const baseX = baseJoin + 1.5;
+    const baseX = baseJoin + 0.75;
     const samples = 18;
     points = [];
     for (let i = 0; i <= samples; i++) {
@@ -123,12 +180,12 @@ function taperedImageTransition(
   }
 
   let profile = ctx.track(new ctx.wasm.CrossSection([points], 'NonZero'));
-  // Round the two profile transitions so the collar blends into the badge
-  // and the module instead of ending in triangular points. The paired offset
-  // keeps the nominal footprint while smoothing only the sharp corners.
+  // Round the profile once so the collar blends into the badge and the module
+  // instead of ending in triangular points. A paired expand/shrink offset
+  // created tiny re-entrant corners on narrow image silhouettes.
   try {
-    const soften = Math.max(0.45, Math.min(1.35, bodyHalf * 0.12));
-    profile = ctx.track(profile.offset(soften, 'Round', 2, 32).offset(-soften, 'Round', 2, 32));
+    const soften = Math.max(0.6, Math.min(1.5, bodyHalf * 0.14));
+    profile = ctx.track(profile.offset(soften, 'Round', 2, 48));
   } catch {
     // Keep the valid raw profile if a very small custom module cannot be
     // offset safely.
@@ -183,10 +240,10 @@ export function buildHybridClicker(
   // can overlap the image even when its center-to-center gap is correct.
   const outerModuleWidth = moduleWidth + (blockParams.vertical ? sideWall * 2 : 0);
   const outerModuleDepth = moduleDepth + (blockParams.vertical ? 0 : sideWall * 2);
-  const moduleHeight = (moduleBox.max[2] - moduleBox.min[2]) * Math.max(
-    0.25,
-    Math.min(4, (blockParams.baseHeightMm ?? 14) / 14),
-  );
+  const requestedBaseHeight = Number.isFinite(blockParams.baseHeightMm)
+    ? Math.max(8, Math.min(40, blockParams.baseHeightMm as number))
+    : 18;
+  const moduleHeight = (moduleBox.max[2] - moduleBox.min[2]) * (requestedBaseHeight / 14);
   const moduleBottom = moduleBox.min[2];
   const moduleTop = moduleBottom + moduleHeight;
   const pitch = Math.max(1, assets.pitch || moduleWidth);
@@ -215,32 +272,28 @@ export function buildHybridClicker(
   const badgeSection = ctx.track(imageSection.offset(badgeMargin, 'Round', 2.0, 32));
   const badgeWidth = badgeSection.bounds().max[0] - badgeSection.bounds().min[0];
   const badgeDepth = badgeSection.bounds().max[1] - badgeSection.bounds().min[1];
-  // Keep the block row anchored to the normal 35 mm image position. Changing
-  // image size then changes only the neck span, rather than moving the whole
-  // base along with the image.
-  const referenceBadgeScale = 35 / Math.max(0.01, badgeMax);
-  const referenceBadgeWidth = badgeWidth * referenceBadgeScale;
-  const referenceBadgeDepth = badgeDepth * referenceBadgeScale;
   const badgeBody = ctx.track(wasm.Manifold.extrude(badgeSection, Math.max(0.2, moduleHeight))
     .translate([0, 0, moduleBottom]));
   const deckHeight = Math.max(0.8, Math.min(1.6, params.imageDepth + 0.35));
-  const badgeDeck = ctx.track(wasm.Manifold.extrude(badgeSection, deckHeight)
-    .translate([0, 0, moduleTop]));
+  const profile = params.topProfile ?? 'flat';
+  const profileHeight = profile === 'flat' ? 0 : Math.max(0, Math.min(40, params.topProfileHeight ?? 5));
+  const imageProfile = buildImageProfile(ctx, badgeSection, deckHeight, profileHeight, moduleTop, profile);
+  const badgeDeck = imageProfile.solid;
 
   const bodyColor = blockParams.bodyColorRgb ?? params.bodyColorRgb ?? DEFAULT_BODY;
   // Hybrid must keep the official connector modules. The previous custom
   // square carrier replaced their stepped MX sockets with shallow rectangular
   // pockets and also caused the image badge to be cut by the base cutter.
   // Square/rounded appearance is supplied by the connector assets themselves.
-  const firstBlockPart = blockResult.parts.find((part) => part.name === 'block-0');
-  const blockParts = blockResult.parts.filter((part) => part !== firstBlockPart);
+  const baseParts = blockResult.parts.filter((part) => part.kind === 'body' && part.group === 'base');
+  const blockParts = blockResult.parts.filter((part) => !baseParts.includes(part));
   const parts: ClickerPart[] = [
     ...blockParts,
     toPart(badgeBody, 'body', 'base', bodyColor, 'hybrid-image-base'),
     toPart(badgeDeck, 'body', 'base', bodyColor, 'hybrid-image-deck'),
   ];
 
-  const imageTop = moduleTop + deckHeight;
+  const imageTop = moduleTop + deckHeight + profileHeight;
   for (let index = 0; index < imageRegions.length; index++) {
     const region = imageRegions[index];
     const rings = region.rings
@@ -252,7 +305,10 @@ export function buildHybridClicker(
     if (!rings.length) continue;
     try {
       const section = ctx.track(new wasm.CrossSection(rings, 'NonZero'));
-      const layer = ctx.track(wasm.Manifold.extrude(section, 0.9).translate([0, 0, imageTop - 0.05]));
+      const topLayer = imageProfile.topScale === 1
+        ? section
+        : ctx.track(section.scale([imageProfile.topScale, imageProfile.topScale]));
+      const layer = ctx.track(wasm.Manifold.extrude(topLayer, 0.9).translate([0, 0, imageTop - 0.05]));
       if (!sectionIsEmpty(section) && !layer.isEmpty()) {
         // The image is part of the badge/base assembly. Keep it in the base
         // group so Exploded view lifts only the keycaps, not the artwork.
@@ -264,22 +320,25 @@ export function buildHybridClicker(
   }
 
   // Shift the official block assembly so its first module meets the badge.
+  // Use the actual badge footprint here. Keeping the row at a fixed 35 mm
+  // reference position made the neck stop changing when the image was scaled,
+  // which is exactly what caused the image to look detached at larger sizes.
   const firstOffset = ((count - 1) / 2) * pitch;
   // Deliberate overlap: the connector neck below hides the seam and makes the
   // image badge and the first block print as one continuous body.
   // Leave a small physical gap between the badge and first module. The neck
   // overlaps each side internally, so the final union is solid without the
   // image face visibly cutting into the first keycap.
-  const desiredGap = 0.8;
+  const desiredGap = 0.25;
   let shiftX = 0;
   let shiftY = 0;
   if (blockParams.vertical) {
     const firstY = firstOffset;
-    const desiredFirstY = -(referenceBadgeDepth / 2 + outerModuleDepth / 2) - desiredGap;
+    const desiredFirstY = -(badgeDepth / 2 + outerModuleDepth / 2) - desiredGap;
     shiftY = desiredFirstY - firstY;
   } else {
     const firstX = -firstOffset;
-    const desiredFirstX = referenceBadgeWidth / 2 + outerModuleWidth / 2 + desiredGap;
+    const desiredFirstX = badgeWidth / 2 + outerModuleWidth / 2 + desiredGap;
     shiftX = desiredFirstX - firstX;
   }
 
@@ -288,11 +347,15 @@ export function buildHybridClicker(
     x: placement.x + shiftX,
     y: placement.y + shiftY,
   }));
-  const firstBlockSolid = firstBlockPart
-    ? ctx.track(solidFromPart(wasm, firstBlockPart).translate([shiftX, shiftY, 0]))
-    : null;
-  // Keep the image badge and its neck as one solid. The overlap is deliberate:
-  // it removes a weak seam at the image/block junction in both preview and STL.
+  // Rebuild the complete lower assembly as one base part. Previously only the
+  // first block was merged with the image badge, leaving the remaining modules
+  // as visually separate solids and producing the detached look in preview.
+  const shiftedBaseSolids = baseParts.map((part) => (
+    ctx.track(solidFromPart(wasm, part).translate([shiftX, shiftY, 0]))
+  ));
+  // Keep the image badge, connector neck and every block module in one solid.
+  // The deliberate overlaps remove weak seams at both the image/block junction
+  // and between adjacent source modules while preserving their socket voids.
   const mergeImageAssembly = (...solids: any[]) => {
     let merged = badgeBody;
     for (const solid of solids) merged = ctx.track(merged.add(solid));
@@ -318,7 +381,7 @@ export function buildHybridClicker(
     // The official block module remains a separate connector-aware solid.
     // Only the neck is unioned into the image badge, so no module socket or
     // underside geometry can be accidentally removed.
-    mergeImageAssembly(transition.solid, ...(firstBlockSolid ? [firstBlockSolid] : []));
+    mergeImageAssembly(transition.solid, ...shiftedBaseSolids);
   } else {
     const firstCenterX = -firstOffset + shiftX;
     const firstCenterY = firstOffset + shiftY;
@@ -340,7 +403,7 @@ export function buildHybridClicker(
       bridge = ctx.track(wasm.Manifold.extrude(bridgeProfile, moduleHeight)
         .translate([(xMin + xMax) / 2, 0, moduleBottom]));
     }
-    mergeImageAssembly(bridge, ...(firstBlockSolid ? [firstBlockSolid] : []));
+    mergeImageAssembly(bridge, ...shiftedBaseSolids);
   }
 
   for (const part of blockParts) shiftPart(part, shiftX, shiftY);

@@ -124,7 +124,7 @@ export function setupUI(sidebarLeft: HTMLElement, sidebarRight: HTMLElement, sta
     onBlockKeycapGap: (value) => { store.set({ blockKeycapGapMm: Math.max(0, Math.min(3, value)) }); debouncedRebuild(); },
     onBlockFlatBottom: (value) => { store.set({ blockFlatBottom: value }); debouncedRebuild(); },
     onBlockBaseHeight: (value) => { store.set({ blockBaseHeightMm: Math.max(8, Math.min(30, value)) }); debouncedRebuild(); },
-    onBlockModuleThickness: (value) => { store.set({ blockModuleThicknessMm: Math.max(8, Math.min(30, value)) }); debouncedRebuild(); },
+    onBlockModuleThickness: (value) => { store.set({ blockModuleThicknessMm: Math.max(8, Math.min(40, value)) }); debouncedRebuild(); },
     onBlockModuleSideThickness: (value) => { store.set({ blockModuleSideThicknessMm: Math.max(0, Math.min(33, value)) }); debouncedRebuild(); },
     onBlockBaseCornerRadius: (value) => { store.set({ blockBaseCornerRadiusMm: Math.max(0.5, Math.min(8, value)) }); debouncedRebuild(); },
     onBlockKeycapHeight: (value) => { store.set({ blockKeycapHeightMm: Math.max(6, Math.min(18, value)) }); debouncedRebuild(); },

@@ -224,7 +224,7 @@ export function createUi(
       $('blockChips')!.innerHTML = state.blockSlots.map((slot, index) => `<span class="block-chip" data-block-index="${index}">${slot.ch.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`).join('');
     }
     if ($('blocksSection')) $('blocksSection')!.hidden = state.importMode !== 'blocks' && state.importMode !== 'hybrid';
-    const isBlocksMode = state.importMode === 'blocks' || state.importMode === 'hybrid';
+    const isBlocksMode = state.importMode === 'blocks';
     if ($('baseStyleSection')) $('baseStyleSection')!.hidden = isBlocksMode;
     if ($('sectionSwitch')) $('sectionSwitch')!.hidden = isBlocksMode;
     for (const id of ['topProfileTabs', 'topthick', 'imgdepth', 'socketTolStepper', 'stemTolStepper']) {

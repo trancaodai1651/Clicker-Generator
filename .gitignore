@@ -5,6 +5,7 @@ src-tauri/target/
 *.log
 *.local
 *.zip
+flex-*.png
 .DS_Store
 Thumbs.db
 desktop.ini

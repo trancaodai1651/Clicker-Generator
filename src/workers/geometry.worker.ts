@@ -6,6 +6,7 @@ import { parse3MF } from '../geometry/threemfImport';
 import { buildClicker } from '../geometry/buildClicker';
 import { buildBlocks, prepareBlockAssets, type KeycapAsset, type PreparedBlockAssets } from '../geometry/buildBlocks';
 import { buildHybridClicker } from '../geometry/buildHybridClicker';
+import { buildFlexKeychain } from '../geometry/buildFlexKeychain';
 import type { GeometryRequest, GeometryResponse, ClickerPart } from '../types';
 
 type Wasm = Awaited<ReturnType<typeof Module>>;
@@ -159,7 +160,7 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
       const { parts, switchPlacements, warnings } = buildBlocks(wasm, blockAssets, keycapAsset, msg.params, socket);
       const transfer: Transferable[] = [];
       for (const p of parts as ClickerPart[]) transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
-      post({ type: 'parts', parts, switchPlacements, warnings }, transfer);
+      post({ type: 'parts', requestId: msg.params.requestId, parts, switchPlacements, warnings }, transfer);
       return;
     }
 
@@ -177,6 +178,21 @@ self.onmessage = async (e: MessageEvent<GeometryRequest>) => {
       const transfer: Transferable[] = [];
       for (const p of parts as ClickerPart[]) transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
       post({ type: 'parts', parts, switchPlacements, warnings }, transfer);
+      return;
+    }
+
+    if (msg.type === 'buildFlexKeychain') {
+      if (!blockAssets || !keycapAsset) throw new Error('Assets not initialized');
+      const { parts, switchPlacements, warnings } = buildFlexKeychain(
+        wasm,
+        blockAssets,
+        keycapAsset,
+        socket,
+        msg.params,
+      );
+      const transfer: Transferable[] = [];
+      for (const p of parts as ClickerPart[]) transfer.push(p.vertProperties.buffer, p.triVerts.buffer);
+      post({ type: 'parts', requestId: msg.params.requestId, parts, switchPlacements, warnings }, transfer);
       return;
     }
   } catch (err) {

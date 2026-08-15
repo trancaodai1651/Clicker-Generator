@@ -14,6 +14,8 @@ export interface Viewer {
   showSwitch(on: boolean): void;
   /** Place one preview switch mesh per (clamped) placement the geometry was built with. */
   setSwitchPlacements(placements: SwitchPlacement[]): void;
+  /** Separate modular units like the reference preview when a base module is clicked. */
+  setModularSplit(on: boolean, vertical?: boolean): void;
   renderToPng(): Promise<Blob | null>;
   setTheme(theme: string): void;
   /** Register a callback fired when the user clicks a colored part of the model, or null if clicking empty space. */
@@ -33,6 +35,7 @@ export interface Viewer {
 // solid bottom occludes it cleanly — coplanar at z = 0 causes z-fighting that bleeds
 // grid lines up through the lower body.
 const GRID_GAP = 1.0;
+const MODULAR_SPLIT_EXTRA = 9;
 
 function partToGeometry(p: ClickerPart): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
@@ -146,6 +149,10 @@ export function createViewer(container: HTMLElement): Viewer {
   // The switch mesh (shared across placements) and where to seat copies of it.
   let switchGeometry: THREE.BufferGeometry | null = null;
   let switchPlacements: SwitchPlacement[] = [{ x: 0, y: 0, rotation: 0 }];
+  const switchExplodedLift = 6;
+  let modularSplit = false;
+  let modularVertical = false;
+  let modularCount = 0;
 
   // ---- Part picking / hover / selection ----
   const raycaster = new THREE.Raycaster();
@@ -199,6 +206,7 @@ export function createViewer(container: HTMLElement): Viewer {
     partMeshes.length = 0;
     hoveredIndex = null;
     selectedIndices = [];
+    modularCount = parts.filter((part) => part.kind === 'body' && /^flex-module-\d+$/.test(part.name)).length;
 
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i];
@@ -212,6 +220,8 @@ export function createViewer(container: HTMLElement): Viewer {
       const mesh = new THREE.Mesh(partToGeometry(p), mat);
       mesh.userData.partIndex = i; // raycast hit -> part/material index
       mesh.userData.partName = p.name; // essential for live preview and syncing heights
+      const moduleMatch = /^(?:flex-module|keycap)-(\d+)/.exec(p.name);
+      if (moduleMatch) mesh.userData.moduleIndex = Number(moduleMatch[1]) - 1;
       partMeshes.push(mesh);
       (p.kind === 'body' ? bodyGroup : capGroup).add(mesh);
     }
@@ -257,6 +267,17 @@ export function createViewer(container: HTMLElement): Viewer {
 
   function applyView() {
     capGroup.position.z = viewMode === 'exploded' ? explodeOffset : 0;
+    for (const mesh of partMeshes) {
+      const index = (mesh.userData as { moduleIndex?: number }).moduleIndex;
+      const split = modularSplit && modularCount > 1 && typeof index === 'number'
+        ? (index - (modularCount - 1) / 2) * MODULAR_SPLIT_EXTRA
+        : 0;
+      mesh.position.x = modularVertical ? 0 : split;
+      mesh.position.y = modularVertical ? split : 0;
+    }
+    // Keep switches seated under the caps in assembled mode. In exploded
+    // mode lift the full-height MX mesh clear of the base underside as well.
+    switchGroup.position.z = viewMode === 'exploded' ? switchExplodedLift : 0;
     const section = viewMode === 'section';
     if (section) updateClipPlane();
     for (const m of materials) (m as THREE.MeshStandardMaterial).clippingPlanes = section ? [clipPlane] : [];
@@ -280,7 +301,11 @@ export function createViewer(container: HTMLElement): Viewer {
     if (!switchGeometry || !switchMaterial) return;
     for (const p of switchPlacements) {
       const m = new THREE.Mesh(switchGeometry, switchMaterial);
-      m.position.set(p.x, p.y, 0);
+      const index = switchPlacements.indexOf(p);
+      const split = modularSplit && modularCount > 1
+        ? (index - (modularCount - 1) / 2) * MODULAR_SPLIT_EXTRA
+        : 0;
+      m.position.set(modularVertical ? p.x : p.x + split, modularVertical ? p.y + split : p.y, 0);
       m.rotation.z = (p.rotation * Math.PI) / 180; // match the geometry's socket/stem rotation
       switchGroup.add(m);
     }
@@ -302,9 +327,10 @@ export function createViewer(container: HTMLElement): Viewer {
     geo.computeVertexNormals();
     switchGeometry = geo;
     switchMaterial = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(0x2a2a30),
-      metalness: 0.1,
-      roughness: 0.6,
+      // Match the reference site's neutral printed/MX preview color.
+      color: new THREE.Color(0x8b8f97),
+      metalness: 0.15,
+      roughness: 0.5,
       side: THREE.DoubleSide,
     });
     rebuildSwitchMeshes();
@@ -316,6 +342,13 @@ export function createViewer(container: HTMLElement): Viewer {
 
   function setSwitchPlacements(placements: SwitchPlacement[]) {
     switchPlacements = placements.length ? placements : [{ x: 0, y: 0, rotation: 0 }];
+    rebuildSwitchMeshes();
+  }
+
+  function setModularSplit(on: boolean, vertical = modularVertical) {
+    modularSplit = on;
+    modularVertical = vertical;
+    applyView();
     rebuildSwitchMeshes();
   }
 
@@ -520,6 +553,7 @@ export function createViewer(container: HTMLElement): Viewer {
     setSwitch,
     showSwitch,
     setSwitchPlacements,
+    setModularSplit,
     renderToPng,
     setTheme,
     onPartPick,

@@ -70,8 +70,8 @@ export const renderLeftSidebar = () => `
       <input type="range" id="blockBaseHeight" min="8" max="30" step="0.5" />
     </div>
     <div class="prow-stacked">
-      <div class="prow-header"><label for="blockModuleThickness">Module base thickness</label><input type="text" class="val" id="blockModuleThicknessVal" /></div>
-      <input type="range" id="blockModuleThickness" min="8" max="30" step="0.5" />
+      <div class="prow-header"><label for="blockModuleThickness">Module/base thickness</label><input type="text" class="val" id="blockModuleThicknessVal" /></div>
+      <input type="range" id="blockModuleThickness" min="8" max="40" step="0.5" />
     </div>
     <div class="prow-stacked">
       <div class="prow-header"><label for="blockModuleSideThickness">Module side-wall thickness</label><input type="text" class="val" id="blockModuleSideThicknessVal" /></div>

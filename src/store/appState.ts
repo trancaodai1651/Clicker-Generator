@@ -54,7 +54,9 @@ export const store = createStore<UiState>({
   blockKeycapGapMm: 0,
   blockFlatBottom: true,
   blockBaseHeightMm: 14,
-  blockModuleThicknessMm: 14,
+  // A deeper module base gives the hybrid keychain the same substantial body
+  // as the reference model. The slider remains available for thinner prints.
+  blockModuleThicknessMm: 18,
   blockModuleSideThicknessMm: 0,
   blockBaseCornerRadiusMm: 3,
   blockKeycapHeightMm: 11.8,

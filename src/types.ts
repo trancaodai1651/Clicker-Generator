@@ -190,6 +190,7 @@ export interface BlockGlyph {
   rings: Ring[];
   filamentRgb?: RGB;
   partName?: string;
+  blank?: boolean;
 }
 
 export interface BlocksBuildParams {
@@ -226,6 +227,44 @@ export interface BlocksBuildParams {
   keycapUnit?: number;
   squareModuleBase?: boolean;
   keychainEnd?: 'left' | 'right' | 'top' | 'bottom';
+  /** Optional per-slot colors used by the Flex Keychain page. */
+  capColorByIndex?: RGB[];
+}
+
+export interface FlexKeychainSlot {
+  ch: string;
+  rings: Ring[];
+  capColorRgb: RGB;
+  glyphColorRgb: RGB;
+  blank?: boolean;
+}
+
+export interface FlexKeychainBuildParams {
+  requestId?: number;
+  baseType: 'compact' | 'modular';
+  modularStyle: 'bubbly' | 'bubbly-v2';
+  vertical: boolean;
+  slots: FlexKeychainSlot[];
+  baseColorRgb: RGB;
+  defaultCapColorRgb: RGB;
+  defaultGlyphColorRgb: RGB;
+  gapMm: number;
+  moduleSideWallThicknessMm: number;
+  moduleThicknessMm: number;
+  baseCornerRadiusMm: number;
+  keycapGapMm: number;
+  keycapHeightMm: number;
+  keycapThicknessMm: number;
+  keycapCornerRadiusMm: number;
+  keycapShape: 'rounded' | 'square';
+  keycapMount: 'above' | 'recessed';
+  keycapProfile: 'standard' | 'low' | 'thocky' | 'choc-v1';
+  keycapUnit: number;
+  legendScale: number;
+  legendBold: number;
+  fontSize: number;
+  stemTolerance: number;
+  travel: number;
 }
 
 export interface BlockAssetBuffers {
@@ -278,7 +317,8 @@ export type GeometryRequest =
       outline: Ring[];
       params: BuildParams;
       blockParams: BlocksBuildParams;
-    };
+    }
+  | { type: 'buildFlexKeychain'; params: FlexKeychainBuildParams };
 
 export type GeometryResponse =
   | { type: 'ready' }
@@ -289,7 +329,7 @@ export type GeometryResponse =
   // footprint + min-pitch spacing), so the preview switch meshes match the geometry.
   // `warnings` surfaces non-fatal build notes (e.g. switches pulled together, no room
   // for the keychain hole) for the status line.
-  | { type: 'parts'; parts: ClickerPart[]; switchPlacements: SwitchPlacement[]; warnings: string[] }
+  | { type: 'parts'; requestId?: number; parts: ClickerPart[]; switchPlacements: SwitchPlacement[]; warnings: string[] }
   | { type: 'blocksParts'; requestId?: number; parts: ClickerPart[]; switchPlacements: SwitchPlacement[]; warnings: string[] }
   | { type: 'error'; message: string };
 export type ColorTarget = { kind: 'region'; index: number; compIndex: number } | { kind: 'body' } | { kind: 'base' };
