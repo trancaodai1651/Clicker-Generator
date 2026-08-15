@@ -39,7 +39,7 @@ export const renderRightImport = () => `
       </div>
 
       <div class="section" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
-        <span class="label">Custom Base Shape (?? t?y ch?nh)</span>
+        <span class="label">Custom Base Shape (optional)</span>
         <div class="tabs" style="margin-bottom: 12px;">
           <button id="tab-base-match" class="tab active" type="button">Match Top</button>
           <button id="tab-base-custom" class="tab" type="button">Custom Image</button>
@@ -68,17 +68,17 @@ export const renderRightImport = () => `
           <div style="margin-top:12px;">
             <div class="label" style="text-align:center; margin-bottom:6px; font-size:11px;">ALIGN BOTTOM BASE</div>
             <div style="display:flex; justify-content:center; gap:6px; margin-bottom:6px;">
-              <button type="button" class="btn" id="baseRotLeft" title="Rotate 15? counter-clockwise">? 15?</button>
-              <button type="button" class="btn" id="baseNudgeUp" title="Move up">?</button>
-              <button type="button" class="btn" id="baseRotRight" title="Rotate 15? clockwise">? 15?</button>
+              <button type="button" class="btn" id="baseRotLeft" title="Rotate 15 degrees counter-clockwise">↺ 15°</button>
+              <button type="button" class="btn" id="baseNudgeUp" title="Move up">↑</button>
+              <button type="button" class="btn" id="baseRotRight" title="Rotate 15 degrees clockwise">↻ 15°</button>
             </div>
             <div style="display:flex; justify-content:center; gap:6px;">
-              <button type="button" class="btn" id="baseNudgeLeft" title="Move left">?</button>
-              <button type="button" class="btn" id="baseResetPos" title="Reset position">?</button>
-              <button type="button" class="btn" id="baseNudgeRight" title="Move right">?</button>
+              <button type="button" class="btn" id="baseNudgeLeft" title="Move left">←</button>
+              <button type="button" class="btn" id="baseResetPos" title="Reset position">⌾</button>
+              <button type="button" class="btn" id="baseNudgeRight" title="Move right">→</button>
             </div>
             <div style="display:flex; justify-content:center; gap:6px; margin-top:6px;">
-              <button type="button" class="btn" id="baseNudgeDown" title="Move down">?</button>
+              <button type="button" class="btn" id="baseNudgeDown" title="Move down">↓</button>
             </div>
           </div>
         </div>
@@ -98,8 +98,8 @@ export const renderRightImport = () => `
 
     <div id="iconPanel" class="mode-panel" hidden>
       <div id="iconSearchWrap">
-        <input id="iconSearch" type="search" placeholder="Search Lucide icons?" autocomplete="off" spellcheck="false" />
-        <button id="iconSearchClear" type="button">?</button>
+        <input id="iconSearch" type="search" placeholder="Search Lucide icons…" autocomplete="off" spellcheck="false" />
+        <button id="iconSearchClear" type="button" aria-label="Clear icon search">×</button>
       </div>
       <div id="iconCount"></div>
       <div id="gallery"></div>

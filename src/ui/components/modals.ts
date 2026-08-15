@@ -35,7 +35,7 @@ function showUpdate() {
       <div class="whats-new-badge">What's new</div>
       <h2>Latest updates</h2>
       <ul class="whats-new-list">
-        <li>${check}<span><strong>Multiple switches</strong>: use 1?3 MX switches for bigger designs.</span></li>
+        <li>${check}<span><strong>Multiple switches</strong>: use 1–3 MX switches for bigger designs.</span></li>
         <li>${check}<span><strong>Keychain loop</strong>: add a keyring loop, slide it around the body edge.</span></li>
         <li>${check}<span><strong>Custom Base Shape</strong>: build a custom base for more flexible models.</span></li>
       </ul>
@@ -66,10 +66,10 @@ export function setupTutorial() {
   
   card.innerHTML = `
     <button class="tutorial-card-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-    <h3>H??ng d?n s? d?ng</h3>
-    <p>1. <strong>Import:</strong> K?o th? ?nh, SVG, ho?c nh?p Text ? c?t b?n ph?i.<br/>
-    2. <strong>Config:</strong> Ch?nh s?a m?u s?c, vi?n, k?ch th??c ? c?t b?n tr?i.<br/>
-    3. <strong>Export:</strong> B?m Download 3MF ho?c STL ?? mang ?i in 3D.</p>
+    <h3>How to use</h3>
+    <p>1. <strong>Import:</strong> Drop an image or SVG, choose an icon, or enter text in the right panel.<br/>
+    2. <strong>Configure:</strong> Adjust colors, borders, size, and geometry in the left panel.<br/>
+    3. <strong>Export:</strong> Download a 3MF or STL file for 3D printing.</p>
     <div class="tutorial-controls">
       <label class="tutorial-checkbox"><input type="checkbox" id="tutDontShow" /> Don't show again</label>
       <div class="tutorial-nav"><button class="primary" id="tutNext">Finish</button></div>

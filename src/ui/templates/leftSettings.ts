@@ -3,7 +3,7 @@ import { tip } from '../helpers';
 export const renderLeftSettings = () => `
   <div id="geometrySettingsContainer">
     <details class="section section-collapsible" id="sectionColors">
-      <summary class="label collapsible-head">1 ? Colors &amp; Smoothing</summary>
+      <summary class="label collapsible-head">1 · Colors &amp; Smoothing</summary>
       <div class="collapsible-body">
         <div class="field" id="colorCountField">
           <label for="ccount">Colors ${tip('How many distinct filament colors the image is split into. Each color becomes a separate part in the export.')}</label>
@@ -25,7 +25,7 @@ export const renderLeftSettings = () => `
     </details>
 
     <details class="section section-collapsible" id="sectionShape">
-      <summary class="label collapsible-head">2 ? More Settings</summary>
+      <summary class="label collapsible-head">2 · More Settings</summary>
       <div class="collapsible-body">
         <div class="keychain-panel" style="margin-bottom: 16px;">
           <div class="switch-row" style="margin-bottom: 12px;">
@@ -40,15 +40,15 @@ export const renderLeftSettings = () => `
             <div class="prow-stacked">
               <div class="prow-header"><label>Position ${tip('Slides the keychain attachment around the edge of the body.')}</label></div>
               <div class="tol-stepper" id="keychainRotStepper">
-                <button class="btn" id="keychainRotMinus" type="button">?</button>
-                <span class="tol-val" id="keychainAngleVal">90?</span>
-                <button class="btn" id="keychainRotPlus" type="button">?</button>
+                <button class="btn" id="keychainRotMinus" type="button">−</button>
+                <span class="tol-val" id="keychainAngleVal">90°</span>
+                <button class="btn" id="keychainRotPlus" type="button">+</button>
               </div>
             </div>
             <div class="prow-stacked">
               <div class="prow-header"><label>Slide offset</label></div>
               <div class="tol-stepper" id="keychainOffsetStepper">
-                <button class="btn" id="keychainOffsetMinus" type="button">?</button>
+                <button class="btn" id="keychainOffsetMinus" type="button">−</button>
                 <span class="tol-val" id="keychainOffsetVal">0.0 mm</span>
                 <button class="btn" id="keychainOffsetPlus" type="button">+</button>
               </div>
@@ -56,7 +56,7 @@ export const renderLeftSettings = () => `
             <div class="prow-stacked">
               <div class="prow-header"><label>Hole size</label></div>
               <div class="tol-stepper" id="keychainSizeStepper">
-                <button class="btn" id="keychainSizeMinus" type="button">?</button>
+                <button class="btn" id="keychainSizeMinus" type="button">−</button>
                 <span class="tol-val" id="keychainSizeVal">5.2 mm</span>
                 <button class="btn" id="keychainSizePlus" type="button">+</button>
               </div>
@@ -74,7 +74,7 @@ export const renderLeftSettings = () => `
               <button class="edge-style-btn" data-style="chamfer" type="button">Chamfer</button>
             </div>
             <div class="edge-size-btns gedge-size" data-edge="capTop" style="display:none;">
-              <button class="btn edge-size-minus" type="button">?</button>
+              <button class="btn edge-size-minus" type="button">−</button>
               <span class="edge-size-val"></span>
               <button class="btn edge-size-plus" type="button">+</button>
             </div>
@@ -87,7 +87,7 @@ export const renderLeftSettings = () => `
               <button class="edge-style-btn" data-style="chamfer" type="button">Chamfer</button>
             </div>
             <div class="edge-size-btns gedge-size" data-edge="clickerBase" style="display:none;">
-              <button class="btn edge-size-minus" type="button">?</button>
+              <button class="btn edge-size-minus" type="button">−</button>
               <span class="edge-size-val"></span>
               <button class="btn edge-size-plus" type="button">+</button>
             </div>
@@ -95,21 +95,21 @@ export const renderLeftSettings = () => `
         </div>
 
         <div class="field" style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px;">
-          <label>3D Surface Profile (Kh?i n?i b? m?t) ${tip('Shape the cap into a Dome or Cone instead of a flat face.')}</label>
+          <label>3D Surface Profile ${tip('Shape the cap into a Dome or Cone instead of a flat face.')}</label>
           <div class="tabs" id="topProfileTabs" role="tablist">
-            <button class="tab active" data-profile="flat" type="button">Flat (Ph?ng)</button>
-            <button class="tab" data-profile="dome" type="button">Dome (B?n c?u)</button>
-            <button class="tab" data-profile="cone" type="button">Cone (Ch?p n?n)</button>
+            <button class="tab active" data-profile="flat" type="button">Flat</button>
+            <button class="tab" data-profile="dome" type="button">Dome</button>
+            <button class="tab" data-profile="cone" type="button">Cone</button>
           </div>
         </div>
         <div class="prow-stacked" id="profileHeightRow" style="display:none; margin-top:8px; margin-bottom: 16px;">
-          <div class="prow-header"><label>?? cao ch?p / v?m</label><input type="text" class="val" id="profileHeightVal" value="5.0 mm" /></div>
+          <div class="prow-header"><label>Cap height</label><input type="text" class="val" id="profileHeightVal" value="5.0 mm" /></div>
           <input type="range" id="profileHeight" min="2" max="250" step="0.5" value="5" />
         </div>
 
         <div class="prow-stacked">
           <div class="prow-header">
-            <label for="topthick">Top thickness (?? d?y n?p / ?? ph?ng)</label>
+            <label for="topthick">Top thickness</label>
             <input type="text" class="val" id="topthickVal" />
           </div>
           <input type="range" id="topthick" min="0" max="250" step="0.1" />
@@ -121,23 +121,23 @@ export const renderLeftSettings = () => `
         <div class="prow-stacked">
           <div class="prow-header"><label>Switch socket tolerance</label></div>
           <div class="tol-stepper" id="socketTolStepper">
-            <button class="btn" id="socketTolMinus" type="button">?</button><span class="tol-val" id="socketTolVal">0.00 mm</span><button class="btn" id="socketTolPlus" type="button">+</button>
+            <button class="btn" id="socketTolMinus" type="button">−</button><span class="tol-val" id="socketTolVal">0.00 mm</span><button class="btn" id="socketTolPlus" type="button">+</button>
           </div>
         </div>
         <div class="prow-stacked">
           <div class="prow-header"><label>Switch stem (top part) tolerance</label></div>
           <div class="tol-stepper" id="stemTolStepper">
-            <button class="btn" id="stemTolMinus" type="button">?</button><span class="tol-val" id="stemTolVal">0.0 mm</span><button class="btn" id="stemTolPlus" type="button">+</button>
+            <button class="btn" id="stemTolMinus" type="button">−</button><span class="tol-val" id="stemTolVal">0.0 mm</span><button class="btn" id="stemTolPlus" type="button">+</button>
           </div>
         </div>
       </div>
     </details>
 
     <details class="section section-collapsible" id="sectionSwitch">
-      <summary class="label collapsible-head">3 ? Switch</summary>
+      <summary class="label collapsible-head">3 · Switch</summary>
       <div class="collapsible-body">
         <div class="field" style="margin-bottom:10px;">
-          <label>Switches ${tip('Use 1?3 MX switches for larger or wider designs.')}</label>
+          <label>Switches ${tip('Use 1–3 MX switches for larger or wider designs.')}</label>
           <div class="tabs" id="switchCount" role="tablist">
             <button class="tab active" data-count="1" type="button">1</button>
             <button class="tab" data-count="2" type="button">2</button>
@@ -147,13 +147,13 @@ export const renderLeftSettings = () => `
         <div class="tabs" id="switchChips" role="tablist" style="display:none; margin-bottom:10px;"></div>
         <p class="switch-pad-hint">Move &amp; rotate the MX switch</p>
         <div class="switch-pad" id="switchPad">
-          <button type="button" class="switch-pad-btn pad-rotl" data-rot="3">?</button>
-          <button type="button" class="switch-pad-btn pad-rotr" data-rot="-3">?</button>
-          <button type="button" class="switch-pad-btn pad-up" data-dir="up">?</button>
-          <button type="button" class="switch-pad-btn pad-left" data-dir="left">?</button>
-          <button type="button" class="switch-pad-center" id="switchReset">?</button>
-          <button type="button" class="switch-pad-btn pad-right" data-dir="right">?</button>
-          <button type="button" class="switch-pad-btn pad-down" data-dir="down">?</button>
+          <button type="button" class="switch-pad-btn pad-rotl" data-rot="3" aria-label="Rotate left">↺</button>
+          <button type="button" class="switch-pad-btn pad-rotr" data-rot="-3" aria-label="Rotate right">↻</button>
+          <button type="button" class="switch-pad-btn pad-up" data-dir="up" aria-label="Move up">↑</button>
+          <button type="button" class="switch-pad-btn pad-left" data-dir="left" aria-label="Move left">←</button>
+          <button type="button" class="switch-pad-center" id="switchReset" aria-label="Reset switch position">⌾</button>
+          <button type="button" class="switch-pad-btn pad-right" data-dir="right" aria-label="Move right">→</button>
+          <button type="button" class="switch-pad-btn pad-down" data-dir="down" aria-label="Move down">↓</button>
         </div>
         <div class="switch-pad-readout" id="switchReadout">Centered</div>
         <button class="secondary" id="switchResetAll" type="button" style="display:none; width:100%; margin-top:8px;">Reset all switches</button>
@@ -163,9 +163,9 @@ export const renderLeftSettings = () => `
 
   <div class="sidebar-sticky-footer">
     <div class="btn-row" id="historyControls">
-      <button id="undoBtn" class="secondary" type="button" title="Undo (Ctrl+Z)" disabled>?</button>
-      <button id="refreshBtn" class="secondary" type="button" title="Refresh" disabled>?</button>
-      <button id="redoBtn" class="secondary" type="button" title="Redo (Ctrl+Shift+Z)" disabled>?</button>
+      <button id="undoBtn" class="secondary" type="button" title="Undo (Ctrl+Z)" disabled>↶</button>
+      <button id="refreshBtn" class="secondary" type="button" title="Refresh" disabled>⟳</button>
+      <button id="redoBtn" class="secondary" type="button" title="Redo (Ctrl+Shift+Z)" disabled>↷</button>
     </div>
   </div>
 `;
