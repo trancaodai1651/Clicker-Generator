@@ -4,6 +4,11 @@ import { defineConfig } from 'vite';
 // (user/org page at '/', or a project page at '/<repo>/') with no reconfig.
 export default defineConfig({
   base: './',
+  // Do not silently move to another port when another local Vite app is
+  // running. A mismatched HMR bundle can otherwise appear as a blank page.
+  server: {
+    strictPort: true,
+  },
   worker: {
     format: 'es',
   },

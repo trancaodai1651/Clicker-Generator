@@ -243,11 +243,19 @@ async function build(request: BuildRequest) {
     const lipWall = Math.min(1.2, params.wall - 0.6);
     if (lipWall >= 0.4) {
       const lipProfile = roundedRect(wasm, params.width, params.depth, params.radius);
-      const innerProfile = lipProfile.offset(-0.25, 'Round', 2, 64);
-      const lipInner = innerProfile.offset(-lipWall, 'Round', 2, 64);
-      owned.push(lipProfile, innerProfile, lipInner);
+      // Match the reference generator's two-part lip construction. The raised
+      // ring is added above the rim, while the matching outer band is removed
+      // from the lower part of the shell. Keeping both profiles tied to the
+      // same rounded outline prevents a square/rounded mismatch at corners.
+      const innerProfile = lipProfile.offset(-0.25, 'Round', undefined, 64);
+      const lipInner = innerProfile.offset(-lipWall, 'Round', undefined, 64);
+      const outerCut = lipProfile.subtract(
+        lipProfile.offset(-(lipWall + 0.5), 'Round', undefined, 64),
+      );
+      owned.push(lipProfile, innerProfile, lipInner, outerCut);
       const lipRing = keep(innerProfile.subtract(lipInner));
       solid = keep(solid.add(makeSolid(lipRing, lipHeight, params.height)));
+      solid = keep(solid.subtract(makeSolid(outerCut, lipHeight)));
     }
   }
 
