@@ -7,6 +7,8 @@ export default defineConfig({
   // Do not silently move to another port when another local Vite app is
   // running. A mismatched HMR bundle can otherwise appear as a blank page.
   server: {
+    host: '127.0.0.1',
+    port: 5193,
     strictPort: true,
   },
   worker: {
