@@ -1,5 +1,8 @@
 import './style.css';
 
+const isFormaForgeEmbed = new URLSearchParams(window.location.search).get('embed') === 'formaforge';
+if (isFormaForgeEmbed) document.documentElement.dataset.embed = 'formaforge';
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

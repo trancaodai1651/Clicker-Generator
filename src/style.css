@@ -1847,6 +1847,57 @@ button.fil-chip:active {
   border-color: var(--accent);
 }
 
+/* FormaForgeDT admin embed skin. The geometry engine and controls stay native;
+   only the presentation changes when the generator is hosted in the studio. */
+:root[data-embed="formaforge"] {
+  color-scheme: dark;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --bg: #0b0c0e;
+  --panel: rgba(22, 25, 27, .92);
+  --panel-2: #171a1c;
+  --line: rgba(255, 255, 255, .12);
+  --text: #f2f0ea;
+  --muted: #a9aba5;
+  --accent: #f0b967;
+  --accent-text: #0b0c0e;
+  --accent-2: #a9eca0;
+}
+:root[data-embed="formaforge"] body {
+  background: radial-gradient(circle at 82% 8%, rgba(133, 94, 46, .14), transparent 25rem), var(--bg);
+  color: var(--text);
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-size: 15px;
+}
+:root[data-embed="formaforge"] #layout {
+  grid-template-columns: 280px minmax(0, 1fr) 320px;
+  gap: 0;
+}
+:root[data-embed="formaforge"] .sidebar {
+  padding: 24px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(22px);
+}
+:root[data-embed="formaforge"] .sidebar.left { border-right-color: var(--line); }
+:root[data-embed="formaforge"] .sidebar.right { border-left-color: var(--line); }
+:root[data-embed="formaforge"] h1,
+:root[data-embed="formaforge"] .label,
+:root[data-embed="formaforge"] details.section-collapsible > summary { letter-spacing: -.02em; }
+:root[data-embed="formaforge"] button.primary,
+:root[data-embed="formaforge"] .tab.active,
+:root[data-embed="formaforge"] .shape-group button.active,
+:root[data-embed="formaforge"] .btn.primary { border-radius: 11px; background: var(--text); color: var(--bg); }
+:root[data-embed="formaforge"] button.primary:hover,
+:root[data-embed="formaforge"] .tab.active:hover,
+:root[data-embed="formaforge"] .btn.primary:hover { filter: none; background: var(--accent); }
+:root[data-embed="formaforge"] .drop { border-color: var(--accent); outline-color: rgba(240,185,103,.25); background: rgba(240,185,103,.05); }
+:root[data-embed="formaforge"] #viewport { background: radial-gradient(circle at 50% 42%, rgba(216,146,58,.16), transparent 34%), #111416; }
+:root[data-embed="formaforge"] .welcome-card,
+:root[data-embed="formaforge"] .wz-modal,
+:root[data-embed="formaforge"] .tutorial-card { border-color: var(--line); border-radius: 20px; background: var(--panel); box-shadow: 0 26px 90px rgba(0,0,0,.48); }
+:root[data-embed="formaforge"] .welcome-card h2,
+:root[data-embed="formaforge"] .wz-head { letter-spacing: -.04em; }
+:root[data-embed="formaforge"] .welcome-step-num { background: var(--accent); color: var(--bg); }
+
 /* Empty-state hint inside the floating Edges panel (nothing selected). */
 .edges-empty {
   font-size: 12.5px;

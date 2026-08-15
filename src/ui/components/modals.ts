@@ -4,14 +4,14 @@ export function setupWelcomeModal() {
   wm.className = 'welcome-overlay';
   wm.innerHTML = `
     <div class="welcome-card">
-      <h2>Welcome to Clicker Generator ??</h2>
+      <h2>Welcome to Clicker Generator</h2>
       <p>Turn any image, SVG, icon, or text into a multi-color 3D printable clicker.</p>
       <div class="welcome-steps">
         <div class="welcome-step"><div class="welcome-step-num">1</div><div class="welcome-step-text"><strong>Import your design</strong><span>Drop an image or choose a sample, upload an SVG, pick a Lucide icon, or type custom text.</span></div></div>
         <div class="welcome-step"><div class="welcome-step-num">2</div><div class="welcome-step-text"><strong>Configure the clicker</strong><span>Pick colors &amp; filaments, choose a shape, adjust the size and depth.</span></div></div>
         <div class="welcome-step"><div class="welcome-step-num">3</div><div class="welcome-step-text"><strong>Export &amp; print</strong><span>Download the 3MF file and load it directly into your slicer.</span></div></div>
       </div>
-      <div class="welcome-foot"><button class="primary" id="welcomeClose" style="min-width:150px">Get started ?</button></div>
+      <div class="welcome-foot"><button class="primary" id="welcomeClose" style="min-width:150px">Get started</button></div>
     </div>
   `;
   document.body.appendChild(wm);
@@ -33,7 +33,7 @@ function showUpdate() {
   wm.innerHTML = `
     <div class="welcome-card whats-new-card">
       <div class="whats-new-badge">What's new</div>
-      <h2>Latest updates ?</h2>
+      <h2>Latest updates</h2>
       <ul class="whats-new-list">
         <li>${check}<span><strong>Multiple switches</strong>: use 1?3 MX switches for bigger designs.</span></li>
         <li>${check}<span><strong>Keychain loop</strong>: add a keyring loop, slide it around the body edge.</span></li>
@@ -41,7 +41,7 @@ function showUpdate() {
       </ul>
       <div class="whats-new-foot">
         <label class="whats-new-dismiss"><input type="checkbox" id="updateDontShow" /> Don't show again</label>
-        <button class="primary" id="updateClose" style="min-width:130px">Got it ?</button>
+        <button class="primary" id="updateClose" style="min-width:130px">Got it</button>
       </div>
     </div>
   `;

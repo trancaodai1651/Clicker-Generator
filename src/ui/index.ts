@@ -77,7 +77,7 @@ export function createUi(
   bindTextEvents(cb);
 
   // 4. KHỞI TẠO MODAL
-  setupWelcomeModal();
+  if (document.documentElement.dataset.embed !== 'formaforge') setupWelcomeModal();
   $('helpToggle')?.addEventListener('click', showTutorialPrompt);
 
   // 5. HÀM UPDATE STATE THẦN THÁNH
