@@ -275,6 +275,18 @@ class FlexOrganizer implements OrganizerController {
     this.resizeHandler();
     const render = () => {
       this.frame = window.requestAnimationFrame(render);
+      // Three.js writes an inline canvas size. Some browser zoom/docking
+      // transitions update the stage without dispatching a usable resize
+      // event, so repair the drawing surface from the render loop as well.
+      const pixelRatio = renderer.getPixelRatio();
+      const expectedWidth = Math.max(1, Math.round(viewport.clientWidth * pixelRatio));
+      const expectedHeight = Math.max(1, Math.round(viewport.clientHeight * pixelRatio));
+      if (renderer.domElement.clientWidth !== viewport.clientWidth
+        || renderer.domElement.clientHeight !== viewport.clientHeight
+        || renderer.domElement.width !== expectedWidth
+        || renderer.domElement.height !== expectedHeight) {
+        this.resizeViewer();
+      }
       controls.update();
       renderer.render(scene, camera);
     };

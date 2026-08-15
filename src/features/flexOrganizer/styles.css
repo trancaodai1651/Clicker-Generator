@@ -58,7 +58,7 @@
 .org-main { position: absolute; inset: 58px 0 0; display: grid; grid-template-columns: minmax(0, 1fr) 370px; min-height: 0; }
 .org-stage { position: relative; min-width: 0; overflow: hidden; background: var(--org-canvas); }
 .org-viewport { position: absolute; inset: 0; }
-.org-viewport canvas { display: block; width: 100%; height: 100%; }
+.org-viewport canvas { display: block; width: 100% !important; height: 100% !important; }
 .org-status, .org-stage-hint { position: absolute; pointer-events: none; color: var(--org-muted); background: color-mix(in srgb, var(--org-panel) 82%, transparent); border: 1px solid var(--org-border); box-shadow: 0 8px 24px rgba(37,58,91,.08); backdrop-filter: blur(10px); }
 .org-status { top: 16px; left: 18px; max-width: calc(100% - 36px); padding: 7px 11px; border-radius: 8px; font-size: 11px; }
 .org-stage-hint { left: 18px; bottom: 18px; padding: 7px 10px; border-radius: 8px; font-size: 11px; }
